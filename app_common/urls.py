@@ -10,7 +10,7 @@ urlpatterns = [
     
     
     path("member/signup/", views.MemberSignupApi.as_view(), name="member-signup"),
-    path("member/verify/otp/", views.MemberVerifyOtpApi.as_view(), name="verify-otp"),
+    path("member/verify/otp/", views.MemberVerifyOtpApi.as_view(), name="member-verify-otp"),
     path("member/resend/otp/", views.MemberResendOtpApi.as_view(), name="member-resend-otp"),
     
     # 🔹 Login
@@ -20,7 +20,15 @@ urlpatterns = [
     path("member/reset-pin/", views.MemberResetPinAPI.as_view(), name="member-reset-pin"),
     
     
+
+    
+    
     path("business/signup/", business_api.BusinessSignupApi.as_view(), name="business-signup"),
-    path("business/verify/otp/", business_api.BusinessVerifyOtpApi.as_view(), name="verify-otp"),
+    path("business/verify/otp/", business_api.BusinessVerifyOtpApi.as_view(), name="business-verify-otp"),
     path("business/login/", business_api.BusinessLoginApi.as_view(), name="business-login"),
+    path("business/forgot-pin/", business_api.BusinessForgotPinAPI.as_view(), name="business-forgot-pin"),
+    path("business/reset-pin/", business_api.BusinessResetPinAPI.as_view(), name="business-reset-pin"),
+    path("business/registration/", business_api.BusinessRegistrationApi.as_view(), name="business-registration"),
+    path("business/kyc/", business_api.BusinessKycApi.as_view(), name="business-kyc"),
+    path("busienss/logout/", business_api.BusinessLogoutApi.as_view(), name="business-logout"),
 ]

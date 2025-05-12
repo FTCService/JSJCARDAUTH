@@ -2,7 +2,7 @@ from django.contrib.auth.backends import BaseBackend
 from django.contrib.auth.hashers import check_password
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
-from .models import Member, MemberAuthToken
+from .models import Member, MemberAuthToken, BusinessAuthToken, Business
 
 class MemberAuthBackend(BaseBackend):
     def authenticate(self, request, mobile_number=None, pin=None):
@@ -43,4 +43,26 @@ class CustomTokenAuthentication(BaseAuthentication):
 
             return (user, None)
         except MemberAuthToken.DoesNotExist:
+            raise AuthenticationFailed("Invalid token.")
+
+
+
+class BusinessTokenAuthentication(BaseAuthentication):
+    def authenticate(self, request):
+        auth_header = request.headers.get("Authorization")
+
+        if not auth_header or not auth_header.startswith("Token "):
+            return None
+
+        token_key = auth_header.split("Token ")[1]
+
+        try:
+            user_token = BusinessAuthToken.objects.get(key=token_key)
+            user = user_token.user
+
+            if not isinstance(user, Business):
+                raise AuthenticationFailed("Invalid user type.")
+
+            return (user, None)
+        except BusinessAuthToken.DoesNotExist:
             raise AuthenticationFailed("Invalid token.")

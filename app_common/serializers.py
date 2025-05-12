@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from app_common.models import User, TempMemberUser, Member, TempBusinessUser, Business
+from app_common.models import User, TempMemberUser, Member, TempBusinessUser, Business, BusinessKyc
 import re
 from django.contrib.auth.hashers import check_password
 
@@ -430,4 +430,146 @@ class BusinessLoginSerializer(serializers.Serializer):
         """Ensure the PIN contains only digits."""
         if not re.fullmatch(r"^\d{4}$", value):
             raise serializers.ValidationError("PIN must be exactly 4 digits and contain only numbers.")
+        return value
+    
+
+### 🔹 BUSINESS SERIALIZER SERIALIZER ###
+class BusinessRegistrationSerializer(serializers.ModelSerializer):
+    contact_with_country = serializers.SerializerMethodField()  # Custom field for formatted contact
+
+    class Meta:
+        model = Business
+        fields = [
+            'business_name', 'business_type', 'business_is_active',
+            'business_address', 'business_pincode', 'business_created_by', 'business_created_at',
+            'business_updated_by', 'business_updated_at', 'business_notes', 'email', 'contact_with_country'
+        ]
+        read_only_fields = ['mobile_number', 'pin', 'contact_with_country', 'business_created_at', 'business_updated_at']
+
+    def get_contact_with_country(self, obj):
+        """
+        Format contact with country code (e.g., +91 7462982798).
+        """
+        return f"{obj.business_country_code} {obj.mobile_number}" if obj.mobile_number else None
+
+    def update(self, instance, validated_data):
+        """
+        Update all allowed fields for business registration.
+        """
+        instance.business_type = validated_data.get('business_type', instance.business_type)
+        instance.business_is_active = validated_data.get('business_is_active', instance.business_is_active)
+        instance.business_address = validated_data.get('business_address', instance.business_address)
+        instance.business_pincode = validated_data.get('business_pincode', instance.business_pincode)
+        instance.email = validated_data.get('email', instance.email)
+        instance.business_notes = validated_data.get('business_notes', instance.business_notes)
+        instance.business_updated_by = validated_data.get('business_updated_by', instance.business_updated_by)
+
+        instance.save()
+        return instance
+    
+    
+    
+class BusinessKycSerializer(serializers.ModelSerializer):
+    businessName = serializers.CharField(source="business.business_name", read_only=True)
+
+    kycAdharCard = serializers.CharField(required=False)  # ✅ Accepts String (URL)
+    kycPanCard = serializers.CharField(required=False)  # ✅ Accepts String (URL)
+    kycOthers = serializers.CharField(required=False, allow_null=True)  # ✅ Optional
+
+    class Meta:
+        model = BusinessKyc
+        fields = [
+            "id",
+            "business",  # ✅ Auto-filled from request.user
+            "businessName",
+            "kycStatus",
+            "kycAdharCard",
+            "kycGst",
+            "kycPanCard",
+            "kycOthers",
+        ]
+        read_only_fields = ["business", "businessName"]
+        
+        
+        
+        
+
+### 🔹 Business FORGOT PIN SERIALIZER ###
+class BusinessForgotPinSerializer(serializers.Serializer):
+    """
+    Serializer for requesting OTP for PIN reset.
+    """
+    mobile_number = serializers.CharField(
+        required=True,
+        min_length=10,
+        max_length=10,
+        error_messages={
+            "min_length": "Mobile number must be exactly 10 digits.",
+            "max_length": "Mobile number must be exactly 10 digits.",
+        }
+    )
+
+    def validate_mobile_number(self, value):
+        """
+        Validate that the mobile number:
+        - Contains only numbers.
+        - Exists in either Member or Business table.
+        """
+        if not re.fullmatch(r"^\d{10}$", value):
+            raise serializers.ValidationError("Mobile number must be exactly 10 digits and contain only numbers.")
+
+        if not Business.objects.filter(mobile_number=value).exists():
+            raise serializers.ValidationError("No user found with this mobile number.")
+
+        return value
+
+
+### 🔹 RESET PIN SERIALIZER ###
+class BusinessResetPinSerializer(serializers.Serializer):
+    """
+    Serializer for resetting PIN using OTP.
+    """
+    otp = serializers.CharField(
+        max_length=6, 
+        min_length=6, 
+        required=True, 
+        error_messages={
+            "min_length": "OTP must be exactly 6 digits.",
+            "max_length": "OTP must be exactly 6 digits."
+        }
+    )
+    new_pin = serializers.CharField(
+        write_only=True, 
+        required=True, 
+        min_length=4, 
+        max_length=4,  # ✅ Ensuring PIN is exactly 4 digits
+        error_messages={
+            "min_length": "PIN must be exactly 4 digits.",
+            "max_length": "PIN must be exactly 4 digits."
+        }
+    )
+
+    def validate_otp(self, value):
+        """
+        Validate OTP:
+        - Must be exactly 6 digits.
+        - Must exist in either `Member` or `Business` table.
+        """
+        if not re.fullmatch(r"^\d{6}$", value):
+            raise serializers.ValidationError("OTP must be exactly 6 digits.")
+
+        if not Business.objects.filter(otp=value).exists():
+            raise serializers.ValidationError("Invalid OTP. Please enter a valid OTP.")
+
+        return value
+
+    def validate_new_pin(self, value):
+        """
+        Validate new PIN:
+        - Must be exactly 4 digits.
+        - Must contain only numbers.
+        """
+        if not re.fullmatch(r"^\d{4}$", value):
+            raise serializers.ValidationError("PIN must be exactly 4 digits and contain only numbers.")
+
         return value
