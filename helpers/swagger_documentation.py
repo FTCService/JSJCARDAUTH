@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny
 
 schema_view = get_schema_view(
     openapi.Info(
-        title="JSJ Card API",
+        title="JSJ Card AUTH API",
         default_version="v1",
         description="API documentation for JSJ Card project",
         contact=openapi.Contact(email="support@jsjcard.com"),

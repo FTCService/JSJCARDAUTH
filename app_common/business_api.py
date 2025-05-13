@@ -380,3 +380,29 @@ class BusinessKycApi(APIView):
             )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    
+class VerifyBusinessTokenApi(APIView):
+    """
+    Endpoint to verify a BusinessAuthToken from another service.
+    """
+    def post(self, request):
+        token = request.data.get("token")
+        if not token:
+            return Response({"detail": "Token required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user_token = models.BusinessAuthToken.objects.get(key=token)
+            user = user_token.user
+            if not isinstance(user, Business):
+                return Response({"detail": "Invalid user type."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            return Response({
+                "valid": True,
+                "business_id": user.business_id,
+                "business_name": user.business_name,
+                "user_id": user.id,
+            })
+        except models.BusinessAuthToken.DoesNotExist:
+            return Response({"valid": False, "detail": "Invalid or expired token."}, status=status.HTTP_401_UNAUTHORIZED)

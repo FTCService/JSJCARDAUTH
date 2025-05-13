@@ -31,4 +31,5 @@ urlpatterns = [
     path("business/registration/", business_api.BusinessRegistrationApi.as_view(), name="business-registration"),
     path("business/kyc/", business_api.BusinessKycApi.as_view(), name="business-kyc"),
     path("busienss/logout/", business_api.BusinessLogoutApi.as_view(), name="business-logout"),
+    path('verify-token/', business_api.VerifyBusinessTokenApi.as_view(), name='verify-token'),
 ]
