@@ -19,6 +19,15 @@ class StaffUserSerializer(serializers.ModelSerializer):
     
     
 
+
+### 🔹 ADMIN AND STAFF LOGIN SERIALIZER ###
+class AdminStaffLoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+    
+    
+    
+
 ### 🔹 MEMBER SIGNUP SERIALIZER ###
 class MemberSignupSerializer(serializers.ModelSerializer):
     """
@@ -35,6 +44,7 @@ class MemberSignupSerializer(serializers.ModelSerializer):
         }
     )
     full_name = serializers.CharField(required=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
     pin = serializers.CharField(
         write_only=True,
         min_length=4,
@@ -47,7 +57,7 @@ class MemberSignupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TempMemberUser
-        fields = ["mobile_number", "full_name", "pin","refer_id"]
+        fields = ["mobile_number", "full_name", "pin","refer_id", "email"]
 
     def validate_mobile_number(self, value):
         """Ensure the mobile number contains only digits."""
@@ -61,6 +71,11 @@ class MemberSignupSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("PIN must be exactly 4 digits and contain only numbers.")
         return value
 
+    def validate_email(self, value):
+        if value and TempMemberUser.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Email is already in use.")
+        return value
+    
     def create(self, validated_data):
         # Store 'pin' as 'password' since TempUser uses 'password' instead of 'pin'
         validated_data["password"] = validated_data.pop("pin")
@@ -89,17 +104,9 @@ class VerifyOtpSerializer(serializers.Serializer):
 ### 🔹 MEMBER LOGIN SERIALIZER ###
 class MemberLoginSerializer(serializers.Serializer):
     """
-    Serializer for Member login (mobile_number + pin)
+    Serializer for Member login using either mobile number or email + pin
     """
-    mobile_number = serializers.CharField(
-        required=True,
-        min_length=10,
-        max_length=10,
-        error_messages={
-            "min_length": "Mobile number must be exactly 10 digits.",
-            "max_length": "Mobile number must be exactly 10 digits.",
-        }
-    )
+    mobile_number = serializers.CharField(required=True)  # can be mobile number or email
     pin = serializers.CharField(
         required=True,
         min_length=4,
@@ -112,26 +119,19 @@ class MemberLoginSerializer(serializers.Serializer):
     )
 
     def validate_mobile_number(self, value):
-        """Ensure the mobile number contains only digits."""
-        if not re.fullmatch(r"^\d{10}$", value):
-            raise serializers.ValidationError("Mobile number must be exactly 10 digits and contain only numbers.")
-        return value
+        """
+        Check if input is a valid email or a valid 10-digit mobile number.
+        """
+        if re.fullmatch(r"^\d{10}$", value):  # mobile
+            return value
+        elif re.fullmatch(r"[^@]+@[^@]+\.[^@]+", value):  # email
+            return value
+        raise serializers.ValidationError("Enter a valid 10-digit mobile number or email address.")
 
     def validate_pin(self, value):
-        """Ensure the PIN contains only digits."""
         if not re.fullmatch(r"^\d{4}$", value):
             raise serializers.ValidationError("PIN must be exactly 4 digits and contain only numbers.")
         return value
-
-    def validate(self, data):
-        """Ensure both fields are provided."""
-        mobile_number = data.get("mobile_number")
-        pin = data.get("pin")
-
-        if not mobile_number or not pin:
-            raise serializers.ValidationError("Both mobile_number and pin are required.")
-
-        return data
     
     
     
@@ -221,7 +221,7 @@ class MemberResetPinSerializer(serializers.Serializer):
     
     
 ### 🔹 CHANGE PIN SERIALIZER ###
-class ChangePinSerializer(serializers.Serializer):
+class MemberChangePinSerializer(serializers.Serializer):
     """
     Serializer for changing the user's PIN.
     """
@@ -302,6 +302,75 @@ class MemberResendOtpSerializer(serializers.Serializer):
 
 
 
+# this serializer for send to business all details of member 
+class MemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Member
+        fields = [
+            "full_name",
+            "email",
+            "mobile_number",
+            "first_name",
+            "last_name",
+            "MbrCountryCode",
+            "MbrStatus",
+            "card_purposes",
+            "mbrcardno",
+            "mbraddress",
+            "MbrPincode",
+            "MbrReferalId",
+            "MbrCreatedAt",
+            "MbrUpdatedAt",
+        ]
+        
+        
+        
+class BusinessDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Business
+        fields = [
+            "business_id",
+            "business_name",
+            "email",
+            "mobile_number",
+        ]
+
+
+
+class MemberRegistrationSerializer(serializers.ModelSerializer):
+    contact_with_country = serializers.SerializerMethodField()  # Custom field for formatted contact
+
+    class Meta:
+        model = Member
+        fields = [
+            'full_name', 'first_name', 'last_name', 'mbraddress', 'MbrPincode', 
+            'mbrcardno', 'email', 'contact_with_country', 'MbrStatus'
+        ]
+        read_only_fields = ['mobile_number', 'pin', 'contact_with_country']  # Prevent update of 'contact' and 'pin'
+
+    def get_contact_with_country(self, obj):
+        """
+        Format contact with country code (e.g., +91 7462982798).
+        """
+        return f"{obj.MbrCountryCode} {obj.mobile_number}" if obj.mobile_number else None
+
+    def update(self, instance, validated_data):
+        """
+        Update all allowed fields and generate MbrCardNo if not set.
+        """
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.mbraddress = validated_data.get('mbraddress', instance.mbraddress)
+        instance.MbrPincode = validated_data.get('MbrPincode', instance.MbrPincode)
+        instance.email = validated_data.get('email', instance.email)
+
+        # Generate a random 16-digit card number if not already set
+        
+        instance.MbrStatus = validated_data.get('MbrStatus', instance.MbrStatus)
+       
+        
+        instance.save()
+        return instance
 
 
 #=================== Business authentication serializers ============================

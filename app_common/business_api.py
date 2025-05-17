@@ -11,11 +11,9 @@ from . import serializers, models
 from helpers.utils import send_otp_to_mobile
 import secrets
 from django.utils import timezone
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
-from .authentication import CustomTokenAuthentication, BusinessTokenAuthentication
-from django.contrib.auth.hashers import check_password, make_password
-from app_common.models import Business, Member
+from .authentication import BusinessTokenAuthentication
+from django.contrib.auth.hashers import check_password
+from app_common.models import Business
 
 
 
@@ -380,3 +378,45 @@ class BusinessKycApi(APIView):
             )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    
+class VerifyBusinessTokenApi(APIView):
+    """
+    Endpoint to verify a BusinessAuthToken from another service.
+    """
+    def post(self, request):
+        token = request.data.get("token")
+        if not token:
+            return Response({"detail": "Token required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user_token = models.BusinessAuthToken.objects.get(key=token)
+            user = user_token.user
+            if not isinstance(user, Business):
+                return Response({"detail": "Invalid user type."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            return Response({
+                "valid": True,
+                "business_id": user.business_id,
+                "business_name": user.business_name,
+                "user_id": user.id,
+            })
+        except models.BusinessAuthToken.DoesNotExist:
+            return Response({"valid": False, "detail": "Invalid or expired token."}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        
+        
+class BusinessDetailsByIdAPI(APIView):
+    def get(self, request):
+        business_id = request.GET.get("business_id")
+        print(business_id)
+        if not business_id:
+            return Response({"message": "business_id number is required."}, status=status.HTTP_200_OK)
+
+        member = Business.objects.filter(business_id=business_id).first()
+        if not member:
+            return Response({"message": "Business not found."}, status=status.HTTP_200_OK)
+
+        serializer = serializers.BusinessDetailsSerializer(member)
+        return Response(serializer.data, status=status.HTTP_200_OK)

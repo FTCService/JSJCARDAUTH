@@ -20,12 +20,13 @@ ALLOWED_HOSTS = []
 AUTH_USER_MODEL = "app_common.User"
 AUTHENTICATION_BACKENDS = [
     'app_common.authentication.MemberAuthBackend',
+    "app_common.authentication.AdminAuthBackend",
 ]
 
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        "app_common.authentication.CustomTokenAuthentication",
+        "app_common.authentication.MemberTokenAuthentication",
         "rest_framework.authentication.BasicAuthentication",  
         'rest_framework.authentication.TokenAuthentication',
         
@@ -41,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     'app_common',
+    'admin_dashboard',
     'rest_framework',
     'drf_yasg',
     'corsheaders',

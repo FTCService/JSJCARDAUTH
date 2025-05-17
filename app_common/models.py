@@ -48,6 +48,18 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.email if self.email else "No Email"
     
 
+class UserAuthToken(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="admin_auth_token")
+    key = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Business {self.user} - {self.key}"
+
+    
+
+
+
 # ✅ Member Model
 class Member(AbstractBaseUser, PermissionsMixin):
     full_name = models.CharField(max_length=255, null=True, blank=True)
