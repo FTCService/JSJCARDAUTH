@@ -3,14 +3,15 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth import logout
+from django.contrib.auth import authenticate, logout, login
 from drf_yasg.utils import swagger_auto_schema
 from django.contrib.auth.hashers import check_password
 from helpers.utils import send_otp_to_mobile
-from app_common.authentication import MemberAuthBackend, CustomTokenAuthentication
+from app_common.authentication import MemberAuthBackend, MemberTokenAuthentication
 from drf_yasg import openapi
-from app_common.models import User, Member
+from app_common.models import User, Member,MemberAuthToken
 from . import serializers, models
+from admin_dashboard.models import CardPurpose
 import secrets
 from django.utils import timezone
 import random
@@ -91,11 +92,15 @@ class MemberSignupApi(APIView):
             full_name = validated_data["full_name"]
             mobile_number = validated_data["mobile_number"]
             pin = validated_data["pin"]
+            email = validated_data.get("email")  # New
 
             otp = random.randint(100000, 999999)
 
             if models.Member.objects.filter(mobile_number=mobile_number).exists():
-                return Response({"error": "User already registered. Please log in."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"message": " mobile number already registered. Please log in."}, status=status.HTTP_200_OK)
+
+            if models.Member.objects.filter(email=email).exists():
+                return Response({"message": "email already registered. Please log in."}, status=status.HTTP_200_OK)
 
             models.TempMemberUser.objects.update_or_create(
                 mobile_number=mobile_number,
@@ -104,7 +109,8 @@ class MemberSignupApi(APIView):
                     "pin": pin,
                     "otp": otp,
                     "is_active": False,
-                    "ref_by": refer_id if refer_id else None  # Ensuring `refer_id` is saved
+                    "ref_by": refer_id if refer_id else None,  # Ensuring `refer_id` is saved
+                    "email": email  
                 }
             )
 
@@ -149,7 +155,27 @@ class MemberVerifyOtpApi(APIView):
 
             if refer_id:
                 user.MbrCreatedBy = refer_id
-                user.save()
+                # ✅ Handle multiple purpose entries
+            purposes_data = request.data.get("card_purposes", [
+                {"purpose": "consumer", "features": ["Reward"]}
+            ])
+
+            final_purpose_list = []
+
+            for entry in purposes_data:
+                purpose_name = entry.get("purpose", "consumer")
+                features = entry.get("features", [])
+
+                purpose_obj = CardPurpose.objects.filter(purpose_name=purpose_name).first()
+                if purpose_obj:
+                    final_purpose_list.append({
+                        "id": purpose_obj.id,
+                        "purpose": purpose_obj.purpose_name,
+                        "features": features or purpose_obj.features  # fallback to default
+                    })
+
+            user.card_purposes = final_purpose_list
+            user.save()
 
             # ✅ Generate Token
             token = secrets.token_hex(32)  # Or use uuid.uuid4().hex
@@ -168,6 +194,7 @@ class MemberVerifyOtpApi(APIView):
                 "message": "OTP verified. Signup complete.",
                 "full_name": user.full_name,
                 "cardno": user.mbrcardno,
+                "card_purposes": final_purpose_list,
                 "MbrCreatedAt": user.MbrCreatedAt.strftime('%Y-%m-%d %H:%M:%S'),
                 "token": token  # ✅ Return token to client
             }
@@ -207,12 +234,12 @@ class MemberLoginApi(APIView):
         # Deserialize and validate request data
         serializer = serializers.MemberLoginSerializer(data=request.data)
         if serializer.is_valid():
-            mobile_number = serializer.validated_data["mobile_number"]
+            username = serializer.validated_data["mobile_number"]
             pin = serializer.validated_data["pin"]
 
             # Authenticate using custom backend
             auth_backend = MemberAuthBackend()
-            user = auth_backend.authenticate(request, mobile_number=mobile_number, pin=pin)
+            user = auth_backend.authenticate(request, username=username, pin=pin)
 
             # Check if user is valid and is a Member instance
             if user and isinstance(user, Member):
@@ -243,15 +270,59 @@ class MemberLoginApi(APIView):
 
         # Return validation errors
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+### ✅ MEMBER REGISTRATIONS API (PROFILE) ###
+class MemberRegistrationApi(APIView):
+    """
+    API to get and update the member's full profile information after login/signup.
+    """
+    authentication_classes = [MemberTokenAuthentication]  # Ensure the user is authenticated
+    permission_classes = [IsAuthenticated]  # Ensure only authenticated users can access
+
+    @swagger_auto_schema(
+        operation_description="Get the current member's profile details",
+        responses={200: serializers.MemberRegistrationSerializer()}
+    )
+    def get(self, request):
+        """
+        Retrieve the current member's profile details.
+        """
+        user = request.user  # Get the authenticated user
+        serializer = serializers.MemberRegistrationSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        request_body=serializers.MemberRegistrationSerializer,
+        operation_description="Update the member's profile (excluding contact and pin)."
+    )
+    def post(self, request):
+        """
+        Update only specific member fields (full_name, first_name, last_name, Location, MbrPincode, etc.).
+        """
+        user = request.user  # Get the authenticated user
+        serializer = serializers.MemberRegistrationSerializer(user, data=request.data, partial=True)  # partial update
+
+        if serializer.is_valid():
+            # Ensure 'contact' and 'pin' are not updated
+            serializer.validated_data.pop('contact', None)
+            serializer.validated_data.pop('pin', None)
+
+            serializer.save()
+
+            return Response({"message": "Profile updated successfully","updated_profile": serializer.data}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     
     
-    
+
 ### ✅================ LOGOUT FOR only member ================ ###
 class MemberLogoutApi(APIView):
     """
     API for user logout (removes authentication token).
     """
-    authentication_classes = [CustomTokenAuthentication]  # ✅ Ensure token authentication
+    authentication_classes = [MemberTokenAuthentication]  # ✅ Ensure token authentication
     permission_classes = [IsAuthenticated]  
 
     @swagger_auto_schema(
@@ -338,6 +409,43 @@ class MemberResetPinAPI(APIView):
 
 
 
+### ✅ CHANGE PIN ###
+class MemberChangePinAPI(APIView):
+    """
+    API for logged-in users (Members & Businesses) to change their PIN.
+    """
+    authentication_classes = [MemberTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        request_body=serializers.MemberChangePinSerializer,
+        operation_description="Change PIN for logged-in user (Member or Business).",
+    )
+    def post(self, request):
+        user = request.user  
+        serializer = serializers.MemberChangePinSerializer(data=request.data, context={"request": request})  # ✅ Pass `request` context
+
+        if serializer.is_valid():
+            current_pin = serializer.validated_data["current_pin"]
+            new_pin = serializer.validated_data["new_pin"]
+            confirm_pin = serializer.validated_data["confirm_pin"]
+
+            # ✅ Check if the current PIN is correct
+            if not check_password(current_pin, user.pin):  
+                return Response({"error": "Incorrect current PIN."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # ✅ Ensure new PIN and confirm PIN match
+            if new_pin != confirm_pin:
+                return Response({"error": "New PIN and Confirm PIN do not match."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # ✅ Hash and update the new PIN
+            user.set_pin(new_pin)  
+            user.save()
+
+            return Response({"message": "PIN changed successfully."}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 ### ✅ MEMBER RESEND OTP FOR VERYFIED OTP  ###
 class MemberResendOtpApi(APIView):
@@ -363,5 +471,103 @@ class MemberResendOtpApi(APIView):
             send_otp_to_mobile({"mobile_number": mobile_number, "otp": new_otp})
 
             return Response({"message": "OTP resent successfully.", "mobile_number": mobile_number}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    
+    
+class MemberDetailsByMobileAPI(APIView):
+    def get(self, request):
+        mobile = request.GET.get("mobile_number")
+        print(mobile)
+        if not mobile:
+            return Response({"message": "Mobile number is required."}, status=status.HTTP_200_OK)
+
+        member = Member.objects.filter(mobile_number=mobile).first()
+        if not member:
+            return Response({"message": "Member not found."}, status=status.HTTP_200_OK)
+
+        serializer = serializers.MemberSerializer(member)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+class MemberDetailsByCardNoAPI(APIView):
+    def get(self, request):
+        card_number = request.GET.get("card_number")
+        if not card_number:
+            return Response({"message": "card number is required."}, status=status.HTTP_200_OK)
+
+        member = Member.objects.filter(mbrcardno=card_number).first()
+        if not member:
+            return Response({"message": "Member not found."}, status=status.HTTP_200_OK)
+
+        serializer = serializers.MemberSerializer(member)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+
+class VerifyMemberTokenApi(APIView):
+    """
+    Endpoint to verify a memberAuthToken from another service.
+    """
+    def post(self, request):
+        token = request.data.get("token")
+        if not token:
+            return Response({"detail": "Token required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user_token = MemberAuthToken.objects.select_related('user').get(key=token)
+            user = user_token.user
+
+            if not isinstance(user, Member):
+                return Response({"detail": "Invalid user type."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            return Response({
+                "valid": True,
+                "mbrcardno": user.mbrcardno,
+                "full_name": user.full_name,
+                "user_id": user.id,
+            })
+        except MemberAuthToken.DoesNotExist:
+            return Response({"valid": False, "detail": "Invalid or expired token."}, status=status.HTTP_401_UNAUTHORIZED)
+        except Member.DoesNotExist:
+            return Response({"valid": False, "detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+
+class AdminStaffLoginApi(APIView):
+    """
+    API to log in Admin and Staff users.
+    """
+    @swagger_auto_schema(
+        request_body=serializers.AdminStaffLoginSerializer,
+        tags=["Admin Authentication"]  # ✅ Grouping under "Admin Authentication"
+    )
+    def post(self, request):
+        serializer = serializers.AdminStaffLoginSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data["email"]
+            password = serializer.validated_data["password"]
+
+            user = authenticate(request, email=email, password=password)
+            if user and (user.is_staff or user.is_superuser):
+                login(request, user)
+
+                # ✅ Generate Token
+                new_token = secrets.token_hex(32)  # Or use uuid.uuid4().hex
+                
+                token, _ = models.UserAuthToken.objects.update_or_create(
+                    user=user,
+                    defaults={"key": new_token}
+                )
+
+                return Response(
+                    {"message": "Login successful", "token": token.key,},
+                    status=status.HTTP_200_OK
+                )
+
+            return Response({"error": "Invalid credentials or not authorized"}, status=status.HTTP_401_UNAUTHORIZED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

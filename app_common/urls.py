@@ -15,14 +15,15 @@ urlpatterns = [
     
     # 🔹 Login
     path("member/login/", views.MemberLoginApi.as_view(), name="member-login"),
+    # 🔹 Registration (Complete Profile/Details Update)
+    path("member/registration/", views.MemberRegistrationApi.as_view(), name="member-registration"),
     path("member/logout/", views.MemberLogoutApi.as_view(), name="logout"),
     path("member/forgot-pin/", views.MemberForgotPinAPI.as_view(), name="member-forgot-pin"),
     path("member/reset-pin/", views.MemberResetPinAPI.as_view(), name="member-reset-pin"),
+    path("member/change-pin/", views.MemberChangePinAPI.as_view(), name="change-pin"),
     
-    
+    path('member/verify-token/', views.VerifyMemberTokenApi.as_view(), name='member-verify-token'),
 
-    
-    
     path("business/signup/", business_api.BusinessSignupApi.as_view(), name="business-signup"),
     path("business/verify/otp/", business_api.BusinessVerifyOtpApi.as_view(), name="business-verify-otp"),
     path("business/login/", business_api.BusinessLoginApi.as_view(), name="business-login"),
@@ -31,5 +32,15 @@ urlpatterns = [
     path("business/registration/", business_api.BusinessRegistrationApi.as_view(), name="business-registration"),
     path("business/kyc/", business_api.BusinessKycApi.as_view(), name="business-kyc"),
     path("busienss/logout/", business_api.BusinessLogoutApi.as_view(), name="business-logout"),
+    
+    path('business/details/', business_api.BusinessDetailsByIdAPI.as_view(), name='business-details'),
+    
     path('verify-token/', business_api.VerifyBusinessTokenApi.as_view(), name='verify-token'),
+    
+    path('member-details/', views.MemberDetailsByMobileAPI.as_view(), name='member-details'),
+    path('cardno/member-details/', views.MemberDetailsByCardNoAPI.as_view(), name='by-cardno-member-details'),
+    
+    
+    # 🔹 admin and staf Login
+    path("admin-staff-login/", views.AdminStaffLoginApi.as_view(), name="admin-staff-login"),
 ]

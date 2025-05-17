@@ -11,11 +11,9 @@ from . import serializers, models
 from helpers.utils import send_otp_to_mobile
 import secrets
 from django.utils import timezone
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
-from .authentication import CustomTokenAuthentication, BusinessTokenAuthentication
-from django.contrib.auth.hashers import check_password, make_password
-from app_common.models import Business, Member
+from .authentication import BusinessTokenAuthentication
+from django.contrib.auth.hashers import check_password
+from app_common.models import Business
 
 
 
@@ -406,3 +404,19 @@ class VerifyBusinessTokenApi(APIView):
             })
         except models.BusinessAuthToken.DoesNotExist:
             return Response({"valid": False, "detail": "Invalid or expired token."}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        
+        
+class BusinessDetailsByIdAPI(APIView):
+    def get(self, request):
+        business_id = request.GET.get("business_id")
+        print(business_id)
+        if not business_id:
+            return Response({"message": "business_id number is required."}, status=status.HTTP_200_OK)
+
+        member = Business.objects.filter(business_id=business_id).first()
+        if not member:
+            return Response({"message": "Business not found."}, status=status.HTTP_200_OK)
+
+        serializer = serializers.BusinessDetailsSerializer(member)
+        return Response(serializer.data, status=status.HTTP_200_OK)
