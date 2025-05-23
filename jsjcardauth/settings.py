@@ -1,16 +1,22 @@
 from pathlib import Path
 import os
-
+import sys
 from dotenv import dotenv_values
-env_vars = dotenv_values(".env")
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+sys.path.append(BASE_DIR)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-tk+vn9u1z#ey$$v&2urq8%%h4xah_e2*kl(d6=*3j09$j_wol&'
 
-# SECURITY WARNING: don't run with debug turned on in production!
+env_vars = dotenv_values(".env")
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = str(os.getenv('SECRET_KEY'))
+
+
 DEBUG = env_vars['DEBUG']
 
 ALLOWED_HOSTS = ['*']
