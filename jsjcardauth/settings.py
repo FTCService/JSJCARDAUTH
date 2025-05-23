@@ -93,16 +93,28 @@ WSGI_APPLICATION = 'jsjcardauth.wsgi.application'
 # }
 
 
+# Rds database
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": env_vars["DB_NAME"],
         "USER": env_vars["DB_USER"],
         "PASSWORD": env_vars["DB_PASSWORD"],
-        "HOST": "127.0.0.1",
+        "HOST": "jsjcardtest.cl42kik08yj6.ap-south-1.rds.amazonaws.com",
         "PORT": "5432",
     }
 }
+
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": env_vars["DB_NAME"],
+#         "USER": env_vars["DB_USER"],
+#         "PASSWORD": env_vars["DB_PASSWORD"],
+#         "HOST": "127.0.0.1",
+#         "PORT": "5432",
+#     }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
