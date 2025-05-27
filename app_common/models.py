@@ -266,3 +266,35 @@ class BusinessKyc(models.Model):
     def __str__(self):
         return f"KYC for {self.business.business_name} - Status: {'Verified' if self.kycStatus else 'Not Verified'}"
 
+
+
+class PhysicalCard(models.Model):
+    card_number = models.BigIntegerField(unique=True)  # 16-digit unique card number
+    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='physical_cards', to_field="business_id")
+    issued = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.card_number)
+    
+
+
+class CardMapper(models.Model):
+    SECONDARY_CARD_TYPE_CHOICES = [
+        ('physical', 'Physical Card'),
+        ('prepaid', 'Prepaid Card'),
+        
+    ]
+    business = models.ForeignKey(Business, on_delete=models.CASCADE,related_name='card_mappings',to_field='business_id')
+    primary_card = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='primary_card_mappings',to_field='mbrcardno')
+    secondary_card = models.ForeignKey(PhysicalCard,on_delete=models.CASCADE,to_field='card_number',verbose_name="Secondary Card",related_name="card_mappings")
+    secondary_card_type = models.CharField(max_length=20,choices=SECONDARY_CARD_TYPE_CHOICES,default='physical')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Card Mapper"
+        verbose_name_plural = "Card Mappers"
+        unique_together = ('business', 'primary_card', 'secondary_card')  # Optional: avoid duplicates
+
+    def __str__(self):
+        return f"{self.business.business_name} | Primary: {self.primary_card.mbrcardno} | Secondary: {self.secondary_card} ({self.secondary_card_type})"

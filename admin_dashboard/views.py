@@ -13,9 +13,9 @@ from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from app_common.authentication import UserTokenAuthentication
-
+from app_common.models import PhysicalCard
 from collections import defaultdict
-
+import random
 
 
 
@@ -346,4 +346,70 @@ class CardPurposeDetailApi(APIView):
         
 
 
+class PhysicalCardsListByBusiness(APIView):
+
+    @swagger_auto_schema(
+        operation_description="Get all physical cards",
+        responses={200: serializers.PhysicalCardSerializer(many=True)},tags=['physical card']
+    )
+    def get(self, request, business_id):
+        cards = PhysicalCard.objects.filter(business_id=business_id)
+        serializer = serializers.PhysicalCardSerializer(cards, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
+
+
+class GeneratePhysicalCardsView(APIView):
+
+    @swagger_auto_schema(
+        operation_description="Get all physical cards",
+        responses={200: serializers.PhysicalCardSerializer(many=True)},tags=['physical card']
+    )
+    def get(self, request):
+        cards = PhysicalCard.objects.all()
+        serializer = serializers.PhysicalCardSerializer(cards, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        operation_description="Generate unique 16-digit physical cards for a selected business.",
+        request_body=serializers.GenerateCardSerializer,
+        responses={201: serializers.PhysicalCardSerializer(many=True)},tags=['physical card']
+    )
+    def post(self, request):
+        # try:
+        number_of_cards = int(request.data.get('count'))
+        business_id = request.data.get('business_id')
+
+        if not number_of_cards or not business_id:
+            return Response({'error': 'count and business_id are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        business = Business.objects.get(business_id=business_id)
+
+        # ✅ Fetch used card numbers from both Member and PhysicalCard tables
+        physical_card_numbers = PhysicalCard.objects.values_list('card_number', flat=True)
+        member_card_numbers = Member.objects.values_list('mbrcardno', flat=True)
+        used_card_numbers = set(physical_card_numbers).union(set(member_card_numbers))
+
+        new_cards = []
+        attempts = 0
+
+        while len(new_cards) < number_of_cards and attempts < number_of_cards * 10:
+            card_number = random.randint(10**15, 10**16 - 1)
+            if card_number not in used_card_numbers:
+                new_cards.append(PhysicalCard(card_number=card_number, business=business))
+                used_card_numbers.add(card_number)
+            attempts += 1
+
+        if not new_cards:
+            return Response({'error': 'Could not generate unique card numbers. Try again.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        PhysicalCard.objects.bulk_create(new_cards)
+        serializer = serializers.PhysicalCardSerializer(new_cards, many=True)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        # except Business.DoesNotExist:
+        #     return Response({'error': 'Business not found'}, status=status.HTTP_404_NOT_FOUND)
+        # except Exception as e:
+        #     return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
