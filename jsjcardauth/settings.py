@@ -65,6 +65,9 @@ MIDDLEWARE = [
     
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    
+    
 ]
 
 ROOT_URLCONF = 'jsjcardauth.urls'

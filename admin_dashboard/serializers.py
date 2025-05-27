@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from app_common.models import Member, Business, User, BusinessKyc
+from app_common.models import Member, Business, User, BusinessKyc, PhysicalCard
 from admin_dashboard.models import CardPurpose
 
 
@@ -53,3 +53,15 @@ class VerifyKycSerializer(serializers.ModelSerializer):
 
 
 
+class PhysicalCardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PhysicalCard
+        fields = ['id', 'card_number', 'business', 'issued', 'created_at']
+        
+        
+class GenerateCardSerializer(serializers.Serializer):
+    count = serializers.IntegerField(min_value=1)
+    business_id = serializers.PrimaryKeyRelatedField(
+        queryset=Business.objects.all(),
+        help_text="Select a business to generate cards for"
+    )

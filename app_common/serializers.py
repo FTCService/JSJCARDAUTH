@@ -373,7 +373,16 @@ class MemberRegistrationSerializer(serializers.ModelSerializer):
         return instance
 
 
+
+
+
+
+
 #=================== Business authentication serializers ============================
+
+
+
+
 
 ### 🔹 BUSINESS SIGNUP SERIALIZER ###
 class BusinessSignupSerializer(serializers.ModelSerializer):

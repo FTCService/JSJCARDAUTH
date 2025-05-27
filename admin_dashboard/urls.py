@@ -19,7 +19,9 @@ urlpatterns = [
   path("card-purpose/create/", views.CardPurposeCreateApi.as_view(), name="card-purpose-create"),
   path("card-purpose/<int:pk>/", views.CardPurposeDetailApi.as_view(), name="card-purpose-detail"),
   
-  
+  path('generate-physical-cards/', views.GeneratePhysicalCardsView.as_view(), name='generate_physical_cards'),
+  path('physical-cards/of-business/<int:business_id>/', views.PhysicalCardsListByBusiness.as_view(), name='physical_cards_of_business'),
+    
   
 ]
 
