@@ -4,7 +4,7 @@ from django.core.cache import cache
 import urllib.parse
 import pytz
 from datetime import datetime
-
+from django.conf import settings
 
 def send_otp_to_mobile(payload):
   
@@ -32,3 +32,20 @@ def send_otp_to_mobile(payload):
             return {"error": "Failed to send OTP"}
     except Exception as e:
         return {"error": str(e)}
+    
+    
+
+def get_member_active_in_marchant(card_number, business_id):
+    try:
+        response = requests.get(
+            settings.REWARD_SERVER_URL + "/member/active_in_clube/",
+            params={"card_number": card_number, "business_id": business_id}
+        )
+        print(response, "response")
+        if response.status_code == 200:
+            return response.json()
+        return None
+    except requests.RequestException as e:
+        print(f"Error contacting auth service: {e}")
+        return None
+

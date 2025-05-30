@@ -35,10 +35,13 @@ urlpatterns = [
     
     path('business/details/', business_api.BusinessDetailsByIdAPI.as_view(), name='business-details'),
     
-    path('verify-token/', business_api.VerifyBusinessTokenApi.as_view(), name='verify-token'),
     
+    # these three api send data to reward and event
+    path('verify-token/', business_api.VerifyBusinessTokenApi.as_view(), name='verify-token'),
     path('member-details/', views.MemberDetailsByMobileAPI.as_view(), name='member-details'),
     path('cardno/member-details/', views.MemberDetailsByCardNoAPI.as_view(), name='by-cardno-member-details'),
+    
+    path('initiate-card-assignment/', business_api.InitiateCardAssignmentView.as_view(), name="initiate-card-assignment"),
     
     
     # 🔹 admin and staf Login
