@@ -14,8 +14,57 @@ from django.utils import timezone
 from .authentication import BusinessTokenAuthentication
 from django.contrib.auth.hashers import check_password, make_password
 from app_common.models import Business
+import csv, io
+class BulkBusinessUploadView(APIView):
+    def post(self, request, *args, **kwargs):
+        file = request.FILES.get("file")
+        if not file:
+            return Response({"error": "CSV file is required"}, status=status.HTTP_400_BAD_REQUEST)
 
+        data_set = file.read().decode("UTF-8")
+        io_string = io.StringIO(data_set)
+        csv_reader = csv.DictReader(io_string)
 
+        created_businesses = []
+        for row in csv_reader:
+            try:
+                if Business.objects.filter(mobile_number=row["mobile_number"]).exists():
+                    continue  # Skip duplicates
+
+                raw_pin = row.get("pin")
+                if raw_pin.startswith("pbkdf2_"):  # Already hashed
+                    pin = raw_pin
+                else:
+                    pin = make_password(raw_pin)
+
+                business = Business(
+                    email=row.get("email"),
+                    mobile_number=row.get("mobile_number"),
+                    pin=pin,
+                    business_name=row.get("business_name"),
+                    business_type=row.get("business_type"),
+                    otp=row.get("otp"),
+                    business_country_code=row.get("business_country_code", "+91"),
+                    business_is_active=row.get("business_is_active", "True") in ["True", "1", "true"],
+                    business_address=row.get("business_address"),
+                    business_pincode=row.get("business_pincode"),
+                    business_created_by=row.get("business_created_by"),
+                    business_updated_by=row.get("business_updated_by"),
+                    business_notes=row.get("business_notes"),
+                )
+                business.save()
+                created_businesses.append(business.mobile_number)
+
+            except Exception as e:
+                return Response({
+                    "error": f"Failed to process row: {row}",
+                    "details": str(e)
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            "message": f"{len(created_businesses)} businesses uploaded successfully",
+            "businesses": created_businesses
+        }, status=status.HTTP_201_CREATED)
 
 
 ### ✅ BUSINESS SIGNUP ###
@@ -314,7 +363,7 @@ class BusinessRegistrationApi(APIView):
         """
         Update only specific business fields (business_name, business_type, address, etc.).
         """
-        user = request.user  # Get the authenticated business user
+        user = request.user # Get the authenticated business user
         serializer = serializers.BusinessRegistrationSerializer(user, data=request.data, partial=True)  # Partial update
 
         if serializer.is_valid():
