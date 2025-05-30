@@ -491,7 +491,7 @@ class InitiateCardAssignmentView(APIView):
             card_number = data['card_number']
             mobile_number = data['mobile_number']
             full_name = data['full_name']
-            pin = data['pin']
+            pin = data.get('pin')
             
             try:
             # Get the actual Business instance
@@ -511,16 +511,15 @@ class InitiateCardAssignmentView(APIView):
             
             if member_qs.exists():
                     member = member_qs.first()
-                    
+                    print(member.mbrcardno,"-----------")
                     # member_data = get_member_active_in_marchant(card_number=member.mbrcardno, business_id=business.business_id)
-
                     # # If we reach here, member is active and we proceed
                     # BizMbrIsActive = member_data.get("BizMbrIsActive", True)  # default to True if not present
                     
                     # Existing member, map as secondary card
                     models.CardMapper.objects.create(
                         business=business,
-                        primary_card=member.mbrcardno,
+                        primary_card=member,
                         secondary_card=physical_card,
                         secondary_card_type='physical'
                     )
