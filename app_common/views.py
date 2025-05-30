@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import authenticate, logout, login
 from drf_yasg.utils import swagger_auto_schema
-from django.contrib.auth.hashers import check_password
+from django.contrib.auth.hashers import check_password, make_password
 from helpers.utils import send_otp_to_mobile
 from app_common.authentication import MemberAuthBackend, MemberTokenAuthentication
 from drf_yasg import openapi
@@ -38,12 +38,16 @@ class BulkMemberUploadView(APIView):
                 # Skip if mobile number or card number already exists
                 if Member.objects.filter(mobile_number=row["mobile_number"]).exists() or Member.objects.filter(mbrcardno=row["mbrcardno"]).exists():
                     continue
-
+                raw_pin = row.get("pin")
+                if raw_pin.startswith("pbkdf2_"):
+                    pin = raw_pin  # Already hashed
+                else:
+                    pin = make_password(raw_pin)
                 member = Member(
                     full_name=row.get("full_name"),
                     email=row.get("email"),
                     mobile_number=row.get("mobile_number"),
-                    pin=row.get("pin"),
+                    pin=pin,
                     first_name=row.get("first_name"),
                     last_name=row.get("last_name"),
                     MbrCountryCode=row.get("MbrCountryCode", "+91"),
