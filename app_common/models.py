@@ -65,7 +65,7 @@ class Member(AbstractBaseUser, PermissionsMixin):
     full_name = models.CharField(max_length=255, null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
     mobile_number = models.CharField(max_length=15, unique=True, null=True, blank=True)
-    pin = models.CharField(max_length=128, null=True, blank=True)  # Store hashed PIN
+    pin = models.CharField(max_length=128)  # Store hashed PIN
     first_name = models.CharField(max_length=255, null=True, blank=True)
     last_name = models.CharField(max_length=255, null=True, blank=True)
     
@@ -99,7 +99,7 @@ class Member(AbstractBaseUser, PermissionsMixin):
     objects = MemberManager()
 
     USERNAME_FIELD = "mobile_number"
-    REQUIRED_FIELDS = ["full_name", "pin"]
+    REQUIRED_FIELDS = ["full_name"]
    
     groups = models.ManyToManyField('auth.Group', related_name='custom_member_set', blank=True)
     user_permissions = models.ManyToManyField('auth.Permission', related_name='custom_member_permissions', blank=True)
