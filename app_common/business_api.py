@@ -8,12 +8,13 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 import re
 from . import serializers, models
-from helpers.utils import send_otp_to_mobile
+from helpers.utils import send_otp_to_mobile, get_member_active_in_marchant
 import secrets
 from django.utils import timezone
 from .authentication import BusinessTokenAuthentication
-from django.contrib.auth.hashers import check_password
+from django.contrib.auth.hashers import check_password, make_password
 from app_common.models import Business
+
 
 
 
@@ -420,3 +421,97 @@ class BusinessDetailsByIdAPI(APIView):
 
         serializer = serializers.BusinessDetailsSerializer(member)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+    
+
+class InitiateCardAssignmentView(APIView):
+    
+    authentication_classes = [BusinessTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        request_body=serializers.InitiateCardAssignmentSerializer,
+        operation_description="Initiate assignment of a physical card to a member.",
+        responses={200: "Card activated successfully", 400: "Validation Error"}
+    )
+    def post(self, request):
+        serializer = serializers.InitiateCardAssignmentSerializer(data=request.data)
+        if serializer.is_valid():
+            data = serializer.validated_data
+            card_number = data['card_number']
+            mobile_number = data['mobile_number']
+            full_name = data['full_name']
+            pin = data['pin']
+            
+            try:
+            # Get the actual Business instance
+                business = models.Business.objects.get(business_id=request.user.business_id)
+            except models.Business.DoesNotExist:
+                return Response({"message": "Business not found."}, status=status.HTTP_200_OK)
+            
+            # Check if physical card exists and not issued
+            physical_card_qs = models.PhysicalCard.objects.filter(card_number=card_number, business=business.business_id, issued=False)
+            if not physical_card_qs.exists():
+                return Response({"message": "Card already issued or not found."}, status=status.HTTP_200_OK)
+
+            physical_card = physical_card_qs.first()
+
+            # Check if member with this mobile number exists
+            member_qs = models.Member.objects.filter(mobile_number=mobile_number)
+            
+            if member_qs.exists():
+                    member = member_qs.first()
+                    
+                    # member_data = get_member_active_in_marchant(card_number=member.mbrcardno, business_id=business.business_id)
+
+                    # # If we reach here, member is active and we proceed
+                    # BizMbrIsActive = member_data.get("BizMbrIsActive", True)  # default to True if not present
+                    
+                    # Existing member, map as secondary card
+                    models.CardMapper.objects.create(
+                        business=business,
+                        primary_card=member.mbrcardno,
+                        secondary_card=physical_card,
+                        secondary_card_type='physical'
+                    )
+                    physical_card.issued = True
+                    physical_card.save()
+
+                    return Response({
+                        "message": "Existing member found. Secondary card assigned.",
+                        "mbrcardno": member.mbrcardno,
+                    }, status=status.HTTP_200_OK)
+
+
+            else:
+                # Create new member
+                new_member = models.Member.objects.create(
+                    mobile_number=mobile_number,
+                    full_name=full_name
+                )
+                new_member.set_pin(pin)  # Securely hash pin
+
+                # Map card as secondary to new member
+                models.CardMapper.objects.create(
+                    business=business,
+                    primary_card=new_member,
+                    secondary_card=physical_card,
+                    secondary_card_type='physical'
+                )
+                physical_card.issued = True
+                physical_card.save()
+
+                # Optional welcome message
+                # send_message_welcome_to_mobile({"mobile_number": mobile_number})
+
+                return Response({
+                    "message": "New member created and card assigned.",
+                    "mbrcardno": new_member.mbrcardno
+                }, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+    
+

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from app_common.models import User, TempMemberUser, Member, TempBusinessUser, Business, BusinessKyc
+from app_common.models import User, TempMemberUser, Member, TempBusinessUser, Business, BusinessKyc, PhysicalCard
 import re
 from django.contrib.auth.hashers import check_password
 
@@ -651,3 +651,20 @@ class BusinessResetPinSerializer(serializers.Serializer):
             raise serializers.ValidationError("PIN must be exactly 4 digits and contain only numbers.")
 
         return value
+    
+    
+
+class InitiateCardAssignmentSerializer(serializers.Serializer):
+    # card_number = serializers.ChoiceField(
+    #     choices=[(card.card_number, str(card.card_number)) for card in PhysicalCard.objects.filter(issued=False)],
+    # )
+    card_number = serializers.CharField(max_length=16)
+    full_name = serializers.CharField(max_length=100)
+    mobile_number = serializers.CharField(max_length=15)
+    pin = serializers.CharField(max_length=6)
+    
+    def validate_card_number(self, value):
+        if not PhysicalCard.objects.filter(card_number=value).exists():
+            raise serializers.ValidationError("Invalid card number.")
+        return value
+

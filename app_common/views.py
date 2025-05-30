@@ -16,6 +16,54 @@ import secrets
 from django.utils import timezone
 import random
 
+import csv
+import io
+
+
+class BulkMemberUploadView(APIView):
+    
+    def post(self, request, *args, **kwargs):
+        file = request.FILES.get("file")
+        if not file:
+            return Response({"error": "CSV file is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Decode and read the file
+        data_set = file.read().decode("UTF-8")
+        io_string = io.StringIO(data_set)
+        csv_reader = csv.DictReader(io_string)
+
+        created_members = []
+        for row in csv_reader:
+            try:
+                # Skip if mobile number or card number already exists
+                if Member.objects.filter(mobile_number=row["mobile_number"]).exists() or Member.objects.filter(mbrcardno=row["mbrcardno"]).exists():
+                    continue
+
+                member = Member(
+                    full_name=row.get("full_name"),
+                    email=row.get("email"),
+                    mobile_number=row.get("mobile_number"),
+                    pin=row.get("pin"),
+                    first_name=row.get("first_name"),
+                    last_name=row.get("last_name"),
+                    MbrCountryCode=row.get("MbrCountryCode", "+91"),
+                    MbrStatus=row.get("MbrStatus", "True") in ["True", "1", "true"],
+                    otp=row.get("otp"),
+                    mbrcardno=row.get("mbrcardno"),
+                    mbraddress=row.get("mbraddress"),
+                    MbrPincode=row.get("MbrPincode"),
+                    MbrReferalId=row.get("MbrReferalId"),
+                    MbrCreatedBy=row.get("MbrCreatedBy"),
+                )
+                member.save()
+                created_members.append(member.mobile_number)
+
+            except Exception as e:
+                return Response({"error": f"Failed to process row: {row}", "details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"message": f"{len(created_members)} members uploaded successfully", "members": created_members}, status=status.HTTP_201_CREATED)
+    
+
 # ================ admin add staff ================ ##.
 class AddStaffApi(APIView):
     """
