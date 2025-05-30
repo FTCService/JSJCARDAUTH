@@ -511,7 +511,7 @@ class InitiateCardAssignmentView(APIView):
             
             if member_qs.exists():
                     member = member_qs.first()
-                    print(member.mbrcardno,"-----------")
+                    # print(member.mbrcardno,"-----------")
                     # member_data = get_member_active_in_marchant(card_number=member.mbrcardno, business_id=business.business_id)
                     # # If we reach here, member is active and we proceed
                     # BizMbrIsActive = member_data.get("BizMbrIsActive", True)  # default to True if not present
