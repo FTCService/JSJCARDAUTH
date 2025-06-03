@@ -13,7 +13,7 @@ import secrets
 from django.utils import timezone
 from .authentication import BusinessTokenAuthentication
 from django.contrib.auth.hashers import check_password, make_password
-from app_common.models import Business
+from app_common.models import Business, BusinessKyc
 import csv, io
 class BulkBusinessUploadView(APIView):
     def post(self, request, *args, **kwargs):
@@ -38,6 +38,8 @@ class BulkBusinessUploadView(APIView):
                     pin = make_password(raw_pin)
 
                 business = Business(
+                    id=row.get("id"),
+                    business_id =row.get("business_id"),
                     email=row.get("email"),
                     mobile_number=row.get("mobile_number"),
                     pin=pin,
@@ -65,6 +67,56 @@ class BulkBusinessUploadView(APIView):
             "message": f"{len(created_businesses)} businesses uploaded successfully",
             "businesses": created_businesses
         }, status=status.HTTP_201_CREATED)
+
+
+
+class BulkBusinessKycUpload(APIView):
+    def post(self, request, *args, **kwargs):
+        file = request.FILES.get("file")
+        if not file:
+            return Response({"error": "CSV file is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        data_set = file.read().decode("UTF-8")
+        io_string = io.StringIO(data_set)
+        csv_reader = csv.DictReader(io_string)
+
+        created_kyc = []
+
+        for row in csv_reader:
+            try:
+                business_id = row.get("business_id")
+                if not business_id:
+                    raise ValueError("Missing business_id in row.")
+
+                business = Business.objects.get(business_id=business_id)
+
+                kyc = BusinessKyc.objects.create(
+                    business=business,
+                    kycStatus=row.get("kycStatus", "False").lower() in ["true", "1"],
+                    kycAdharCard=row.get("kycAdharCard"),
+                    kycGst=row.get("kycGst"),
+                    kycPanCard=row.get("kycPanCard"),
+                    kycOthers=row.get("kycOthers")
+                )
+                created_kyc.append(kyc.business.business_id)
+
+            except Business.DoesNotExist:
+                return Response({
+                    "error": f"Business with ID '{row.get('business_id')}' does not exist."
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            except Exception as e:
+                return Response({
+                    "error": f"Failed to process row: {row}",
+                    "details": str(e)
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            "message": f"{len(created_kyc)} KYC records uploaded successfully.",
+            "businesses": created_kyc
+        }, status=status.HTTP_201_CREATED)
+
+
 
 
 ### ✅ BUSINESS SIGNUP ###
@@ -209,9 +261,6 @@ class BusinessLoginApi(APIView):
     """
     @swagger_auto_schema(request_body=serializers.BusinessLoginSerializer)
     def post(self, request):
-        if request.user.is_authenticated:
-            return Response({"success": False, "message": "You are already logged in."}, status=status.HTTP_400_BAD_REQUEST)
-
         serializer = serializers.BusinessLoginSerializer(data=request.data)
         if serializer.is_valid():
             contact = serializer.validated_data["contact"]

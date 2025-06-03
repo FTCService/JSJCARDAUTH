@@ -10,6 +10,9 @@ urlpatterns = [
     path("upload-members/", views.BulkMemberUploadView.as_view(), name="upload-members"),
     path("upload-business/", business_api.BulkBusinessUploadView.as_view(), name="upload-business"),
     
+    path("upload-business/kyc/", business_api.BulkBusinessKycUpload.as_view(), name="upload-business-kyc"),
+    
+    
     
     path("member/signup/", views.MemberSignupApi.as_view(), name="member-signup"),
     path("member/verify/otp/", views.MemberVerifyOtpApi.as_view(), name="member-verify-otp"),

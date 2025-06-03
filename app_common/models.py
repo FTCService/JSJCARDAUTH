@@ -246,7 +246,7 @@ class BusinessAuthToken(models.Model):
 class BusinessKyc(models.Model):
 
     business = models.ForeignKey(
-        Business, on_delete=models.CASCADE, related_name="kyc", verbose_name="Business"
+        Business, on_delete=models.CASCADE, related_name="kyc", verbose_name="Business", to_field="business_id"
     )
     kycStatus = models.BooleanField(default=False, null=True, blank=True, verbose_name="KYC Status"
     )
