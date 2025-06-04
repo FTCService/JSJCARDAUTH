@@ -440,13 +440,16 @@ class BusinessKycApi(APIView):
         responses={200: serializers.BusinessKycSerializer()}
     )
     def get(self, request):
-        user = request.user
-        if not hasattr(user, "business_name"):
-            return Response({"error": "Only businesses can access this API."}, status=status.HTTP_403_FORBIDDEN)
-
-        kyc_data = models.BusinessKyc.objects.filter(business=user).first()
+        user = request.user.business_id
+       
+        try:
+            business = Business.objects.get(business_id=user)
+        except Business.DoesNotExist:
+            return Response({"error": "Invalid business."}, status=status.HTTP_403_FORBIDDEN)
+        
+        kyc_data = models.BusinessKyc.objects.filter(business=business).first()
         if not kyc_data:
-            return Response({"message": "No KYC details found. Please submit your KYC."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": "No KYC details found. Please submit your KYC."}, status=status.HTTP_200_OK)
 
         serializer =serializers.BusinessKycSerializer(kyc_data)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -456,15 +459,17 @@ class BusinessKycApi(APIView):
         operation_description="Submit Business KYC documents (Send URLs for Aadhar, PAN, etc.)."
     )
     def post(self, request):
-        user = request.user
-        if not hasattr(user, "business_name"):
-            return Response({"error": "Only businesses can submit KYC."}, status=status.HTTP_403_FORBIDDEN)
+        business_id = request.user.business_id
 
+        try:
+            business = Business.objects.get(business_id=business_id)
+        except Business.DoesNotExist:
+            return Response({"error": "Invalid business."}, status=status.HTTP_403_FORBIDDEN)
         # ✅ Auto-assign `business` field from `request.user`
-        kyc_instance, created = models.BusinessKyc.objects.get_or_create(business=user)
+        kyc_instance, created = models.BusinessKyc.objects.get_or_create(business=business)
 
         mutable_data = request.data.copy()
-        mutable_data["business"] = user.id  # Assign user ID to business field
+        mutable_data["business"] = business.id  # Assign user ID to business field
         mutable_data["kycStatus"] = True
 
         serializer = serializers.BusinessKycSerializer(kyc_instance, data=mutable_data, partial=True)

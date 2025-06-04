@@ -534,6 +534,7 @@ class BusinessRegistrationSerializer(serializers.ModelSerializer):
         """
         Update all allowed fields for business registration.
         """
+        instance.business_name = validated_data.get('business_name', instance.business_name)
         instance.business_type = validated_data.get('business_type', instance.business_type)
         instance.business_is_active = validated_data.get('business_is_active', instance.business_is_active)
         instance.business_address = validated_data.get('business_address', instance.business_address)
@@ -552,7 +553,7 @@ class BusinessKycSerializer(serializers.ModelSerializer):
 
     kycAdharCard = serializers.CharField(required=False)  # ✅ Accepts String (URL)
     kycPanCard = serializers.CharField(required=False)  # ✅ Accepts String (URL)
-    kycOthers = serializers.CharField(required=False, allow_null=True)  # ✅ Optional
+    kycOthers = serializers.CharField(required=False, allow_null=True, allow_blank=True)   # ✅ Optional
 
     class Meta:
         model = BusinessKyc
@@ -664,4 +665,17 @@ class InitiateCardAssignmentSerializer(serializers.Serializer):
         if not PhysicalCard.objects.filter(card_number=value).exists():
             raise serializers.ValidationError("Invalid card number.")
         return value
+
+
+
+# class InitiateCardAssignWithoutPinSerializer(serializers.Serializer):
+#     card_number = serializers.CharField(max_length=16)
+#     full_name = serializers.CharField(max_length=100, required = False)
+#     mobile_number = serializers.CharField(max_length=15,required = False)
+#     pin = serializers.CharField(max_length=6,required = False)
+    
+#     def validate_card_number(self, value):
+#         if not PhysicalCard.objects.filter(card_number=value).exists():
+#             raise serializers.ValidationError("Invalid card number.")
+#         return value
 
