@@ -607,17 +607,20 @@ class AdminStaffLoginApi(APIView):
             user = authenticate(request, email=email, password=password)
             if user and (user.is_staff or user.is_superuser):
                 login(request, user)
-
-                # ✅ Generate Token
-                new_token = secrets.token_hex(32)  # Or use uuid.uuid4().hex
-                
-                token, _ = models.UserAuthToken.objects.update_or_create(
-                    user=user,
+                new_token = secrets.token_hex(32)
+                token, created = models.UserAuthToken.objects.get_or_create(
+                     user=user,
                     defaults={"key": new_token}
                 )
 
                 return Response(
-                    {"message": "Login successful", "token": token.key,},
+                    {"message": "Login successful",
+                    "token": token.key,
+                    "user_type": "admin" if user.is_superuser else "staff",
+                    "is_staff": user.is_staff,
+                    "is_superuser": user.is_superuser,
+                    "user_id": user.id,
+                    "email": user.email,},
                     status=status.HTTP_200_OK
                 )
 
