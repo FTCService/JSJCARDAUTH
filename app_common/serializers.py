@@ -680,3 +680,7 @@ class CardMapperSerializer(serializers.ModelSerializer):
         ]
 
 
+class PhysicalCardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PhysicalCard
+        fields = ['card_number', 'business', 'issued', 'created_at']

@@ -49,6 +49,7 @@ urlpatterns = [
     path('initiate-card-assignment/', business_api.InitiateCardAssignmentView.as_view(), name="initiate-card-assignment"),
     path('card-mappings/list/', business_api.AllCardMappingsByBusiness.as_view(), name='business-card-mappings'),
     
+    path('physical-cards/list/', business_api.PhysicalCardsByBusinessID.as_view(), name='business-physical-cards'),
     
     # 🔹 admin and staf Login
     path("admin-staff-login/", views.AdminStaffLoginApi.as_view(), name="admin-staff-login"),
