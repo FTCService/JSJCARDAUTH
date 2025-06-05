@@ -655,10 +655,13 @@ class PhysicalCardsByBusinessID(APIView):
     authentication_classes = [BusinessTokenAuthentication]  
     permission_classes = [IsAuthenticated]
 
-    @swagger_auto_schema(
-        operation_description="Retrieve Business CardMapper list",
-        responses={200: serializers.PhysicalCardSerializer()}
-    )
+    # @swagger_auto_schema(
+    #     operation_description="Retrieve Business PhysicalCard list",
+    #     responses={200: openapi.Response(
+    #         description="List of Physical Cards",
+    #         schema=serializers.PhysicalCardSerializer(many=True)
+    #     )}
+    # )
     def get(self, request):
         physical_cards = models.PhysicalCard.objects.filter(business__business_id=request.user.business_id)
         serializer = serializers.PhysicalCardSerializer(physical_cards, many=True)
