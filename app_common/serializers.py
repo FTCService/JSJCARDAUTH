@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from app_common.models import User, TempMemberUser, Member, TempBusinessUser, Business, BusinessKyc, PhysicalCard
+from app_common.models import User, TempMemberUser, Member, TempBusinessUser, Business, BusinessKyc, PhysicalCard, CardMapper
 import re
 from django.contrib.auth.hashers import check_password
 
@@ -668,14 +668,15 @@ class InitiateCardAssignmentSerializer(serializers.Serializer):
 
 
 
-# class InitiateCardAssignWithoutPinSerializer(serializers.Serializer):
-#     card_number = serializers.CharField(max_length=16)
-#     full_name = serializers.CharField(max_length=100, required = False)
-#     mobile_number = serializers.CharField(max_length=15,required = False)
-#     pin = serializers.CharField(max_length=6,required = False)
-    
-#     def validate_card_number(self, value):
-#         if not PhysicalCard.objects.filter(card_number=value).exists():
-#             raise serializers.ValidationError("Invalid card number.")
-#         return value
+class CardMapperSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CardMapper
+        fields = [
+            'business',
+            'primary_card',
+            'secondary_card',
+            'secondary_card_type',
+            'created_at'
+        ]
+
 

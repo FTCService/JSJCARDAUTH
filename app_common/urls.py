@@ -47,6 +47,7 @@ urlpatterns = [
     path('cardno/member-details/', views.MemberDetailsByCardNoAPI.as_view(), name='by-cardno-member-details'),
     
     path('initiate-card-assignment/', business_api.InitiateCardAssignmentView.as_view(), name="initiate-card-assignment"),
+    path('card-mappings/list/', business_api.AllCardMappingsByBusiness.as_view(), name='business-card-mappings'),
     
     
     # 🔹 admin and staf Login

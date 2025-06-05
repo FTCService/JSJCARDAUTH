@@ -617,3 +617,15 @@ class InitiateCardAssignmentView(APIView):
 
     
 
+class AllCardMappingsByBusiness(APIView):
+    authentication_classes = [BusinessTokenAuthentication]  
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="Retrieve Business CardMapper list",
+        responses={200: serializers.CardMapperSerializer()}
+    )
+    def get(self, request):
+        mappings = models.CardMapper.objects.filter(business__business_id=request.user.business_id)
+        serializer = serializers.CardMapperSerializer(mappings, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
