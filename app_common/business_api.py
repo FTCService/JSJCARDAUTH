@@ -553,11 +553,27 @@ class InitiateCardAssignmentView(APIView):
             except models.Business.DoesNotExist:
                 return Response({"message": "Business not found."}, status=status.HTTP_200_OK)
             
+           
             # Check if physical card exists and not issued
-            physical_card_qs = models.PhysicalCard.objects.filter(card_number=card_number, business=business.business_id, issued=False)
-            if not physical_card_qs.exists():
-                return Response({"message": "Card already issued or not found."}, status=status.HTTP_200_OK)
+            physical_card_qs = models.PhysicalCard.objects.filter(card_number=card_number, business=business.business_id)
 
+            if not physical_card_qs.exists():
+                return Response({"message": "Card not found."}, status=status.HTTP_200_OK)
+
+            physical_card = physical_card_qs.first()
+
+            # Check if this card is already mapped as a secondary card
+            card_mapper_qs = models.CardMapper.objects.filter(secondary_card=physical_card)
+
+            if card_mapper_qs.exists():
+                existing_mapping = card_mapper_qs.first()
+                return Response({
+                    "message": "Card already issued.",
+                    "mbrcardno": existing_mapping.primary_card.mbrcardno
+                }, status=status.HTTP_200_OK)
+
+                        
+                        
             physical_card = physical_card_qs.first()
 
             # Check if member with this mobile number exists
@@ -587,6 +603,8 @@ class InitiateCardAssignmentView(APIView):
 
 
             else:
+                
+               
                 # Create new member
                 new_member = models.Member.objects.create(
                     mobile_number=mobile_number,
@@ -628,4 +646,20 @@ class AllCardMappingsByBusiness(APIView):
     def get(self, request):
         mappings = models.CardMapper.objects.filter(business__business_id=request.user.business_id)
         serializer = serializers.CardMapperSerializer(mappings, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+    
+
+class PhysicalCardsByBusinessID(APIView):
+    authentication_classes = [BusinessTokenAuthentication]  
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="Retrieve Business CardMapper list",
+        responses={200: serializers.PhysicalCardSerializer()}
+    )
+    def get(self, request):
+        physical_cards = models.PhysicalCard.objects.filter(business__business_id=request.user.business_id)
+        serializer = serializers.PhysicalCardSerializer(physical_cards, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
