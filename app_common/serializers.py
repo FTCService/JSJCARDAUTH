@@ -659,7 +659,7 @@ class InitiateCardAssignmentSerializer(serializers.Serializer):
     card_number = serializers.CharField(max_length=16)
     full_name = serializers.CharField(max_length=100, required = False)
     mobile_number = serializers.CharField(max_length=15,required = False)
-    pin = serializers.CharField(max_length=6,required = False)
+    pin = serializers.CharField(max_length=6,required = False, allow_blank=True)
     
     def validate_card_number(self, value):
         if not PhysicalCard.objects.filter(card_number=value).exists():
