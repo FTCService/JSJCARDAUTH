@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, staff_api
 
 
 app_name= "admin_dashboard"
@@ -14,6 +14,9 @@ urlpatterns = [
   path("admin/dashboard/", views.AdminDashboard.as_view(), name="admin-dashboard"),
   path("business/kyc/verify/<int:business_id>/", views.VerifyBusinessKycApi.as_view(), name="verify-business-kyc"),
   
+  path("staff/dashboard/", staff_api.StaffDashboard.as_view(), name="staff-dashboard"),
+  
+
   
   path("card-purpose/", views.CardPurposeListApi.as_view(), name="card-purpose-list"),
   path("card-purpose/create/", views.CardPurposeCreateApi.as_view(), name="card-purpose-create"),
