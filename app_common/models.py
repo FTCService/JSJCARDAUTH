@@ -4,7 +4,7 @@ from .manager import MyAccountManager, MemberManager, BusinessManager
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 import random
-
+from django.core.validators import validate_email
 # ✅ TempMemberUser (for OTP verification)
 class TempMemberUser(models.Model):
     full_name = models.CharField(max_length=255, null=True, blank=True)
@@ -63,7 +63,7 @@ class UserAuthToken(models.Model):
 # ✅ Member Model
 class Member(AbstractBaseUser, PermissionsMixin):
     full_name = models.CharField(max_length=255, null=True, blank=True)
-    email = models.EmailField(null=True, blank=True)
+    email = models.EmailField(null=True)
     mobile_number = models.CharField(max_length=15, unique=True, null=True, blank=True)
     pin = models.CharField(max_length=128)  # Store hashed PIN
     first_name = models.CharField(max_length=255, null=True, blank=True)
@@ -113,6 +113,7 @@ class Member(AbstractBaseUser, PermissionsMixin):
     def save(self, *args, **kwargs):
         if not self.mbrcardno:
             self.mbrcardno = self.generate_unique_cardno()
+                       
         super().save(*args, **kwargs)
 
     def __str__(self):

@@ -145,16 +145,18 @@ class MemberSignupApi(APIView):
             full_name = validated_data["full_name"]
             mobile_number = validated_data["mobile_number"]
             pin = validated_data["pin"]
-            email = validated_data.get("email")  # New
-
+            email = validated_data.get("email") or None
             otp = random.randint(100000, 999999)
 
             if models.Member.objects.filter(mobile_number=mobile_number).exists():
                 return Response({"message": " mobile number already registered. Please log in."}, status=status.HTTP_200_OK)
 
-            if models.Member.objects.filter(email=email).exists():
+          
+        
+            if email and models.Member.objects.filter(email=email).exists():
+                
                 return Response({"message": "email already registered. Please log in."}, status=status.HTTP_200_OK)
-
+          
             models.TempMemberUser.objects.update_or_create(
                 mobile_number=mobile_number,
                 defaults={
