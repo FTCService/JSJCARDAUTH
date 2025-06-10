@@ -22,7 +22,7 @@ def send_otp_to_mobile(payload):
     message = f" hi from jsj Your OTP is {otp}. It is valid for 5 minutes."
     encoded_message = requests.utils.quote(message)  # URL encode the message
 
-    sms_api_url = f"https://8jzm0a9gbk.execute-api.ap-south-1.amazonaws.com/SMS-API/BulkSMS/?option=publishMessage&passKey=IamJiseniorJi@374&phoneNumber={mobile_number}&customMessage={encoded_message}"
+    sms_api_url = f"https://7l7dy2zq63.execute-api.ap-south-1.amazonaws.com/default/smsapi/?option=publishMessage&passKey=IamJiseniorJi@374&phoneNumber={mobile_number}&customMessage={encoded_message}"
 
     try:
         response = requests.get(sms_api_url)
