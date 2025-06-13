@@ -53,4 +53,5 @@ urlpatterns = [
     
     # 🔹 admin and staf Login
     path("admin-staff-login/", views.AdminStaffLoginApi.as_view(), name="admin-staff-login"),
+    path("user/verify-token/", views.VerifyAdminStaffTokenApi.as_view(), name="user-verify-token"),
 ]

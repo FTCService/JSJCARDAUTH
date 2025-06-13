@@ -13,9 +13,11 @@ from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from app_common.authentication import UserTokenAuthentication
-from app_common.models import PhysicalCard
+from app_common.models import PhysicalCard 
 from collections import defaultdict
 import random
+
+
 
 
 
