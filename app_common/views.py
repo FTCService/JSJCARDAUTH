@@ -610,8 +610,8 @@ class AdminStaffLoginApi(APIView):
             if user and (user.is_staff or user.is_superuser):
                 login(request, user)
                 new_token = secrets.token_hex(32)
-                token, created = models.UserAuthToken.objects.get_or_create(
-                     user=user,
+                token, created = models.UserAuthToken.objects.update_or_create(
+                    user=user,
                     defaults={"key": new_token}
                 )
 
@@ -629,3 +629,4 @@ class AdminStaffLoginApi(APIView):
             return Response({"error": "Invalid credentials or not authorized"}, status=status.HTTP_401_UNAUTHORIZED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
