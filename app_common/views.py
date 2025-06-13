@@ -630,3 +630,30 @@ class AdminStaffLoginApi(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+    
+    
+class VerifyAdminStaffTokenApi(APIView):
+    """
+    Endpoint to verify a UserAuthToken from another service.
+    """
+    def post(self, request):
+        token = request.data.get("token")
+        if not token:
+            return Response({"detail": "Token required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user_token = models.UserAuthToken.objects.get(key=token)
+            user = user_token.user
+            if not isinstance(user, User):
+                return Response({"detail": "Invalid user type."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            return Response({
+                "valid": True,
+                "employee_id": user.employee_id,
+                "full_name": user.full_name,
+                "id": user.id,
+                "email": user.email,
+            })
+        except models.UserAuthToken.DoesNotExist:
+            return Response({"valid": False, "detail": "Invalid or expired token."}, status=status.HTTP_401_UNAUTHORIZED)
+        
