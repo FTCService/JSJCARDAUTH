@@ -35,7 +35,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_superuser = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
-
+    # ✅ New Role Field
+    is_jobmitra = models.BooleanField(default=False)
     token = models.CharField(max_length=100, null=True, blank=True)
     meta_data = models.JSONField(default=dict)
 
@@ -154,6 +155,7 @@ class TempBusinessUser(models.Model):
     is_active = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
+    is_institute = models.BooleanField(default=False)
     
     def __str__(self):
         return f"{self.business_name} - {self.mobile_number}"
@@ -196,6 +198,9 @@ class Business(AbstractBaseUser, PermissionsMixin):
     business_updated_by = models.CharField(max_length=255, null=True, blank=True)  
     business_updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)  
     business_notes = models.TextField(null=True, blank=True)  
+    
+    is_business = models.BooleanField(default=True)     # Regular business
+    is_institute = models.BooleanField(default=False)   # If true, user is an institute
     
     objects = BusinessManager()
 

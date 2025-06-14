@@ -15,6 +15,7 @@ urlpatterns = [
   path("business/kyc/verify/<int:business_id>/", views.VerifyBusinessKycApi.as_view(), name="verify-business-kyc"),
   
   path("staff/dashboard/", staff_api.StaffDashboard.as_view(), name="staff-dashboard"),
+  path("staff/add-institute/", staff_api.InstituteSignupApi.as_view(), name="staff-add-institute"),
   
 
   
@@ -25,6 +26,7 @@ urlpatterns = [
   path('generate-physical-cards/', views.GeneratePhysicalCardsView.as_view(), name='generate_physical_cards'),
   path('physical-cards/of-business/<int:business_id>/', views.PhysicalCardsListByBusiness.as_view(), name='physical_cards_of_business'),
     
+  path("add/job_mitra/", staff_api.AddJobMitraApi.as_view(), name="staff-job_mitra"),
   
 ]
 
