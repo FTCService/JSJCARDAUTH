@@ -295,7 +295,10 @@ class BusinessLoginApi(APIView):
                         "token": token.key,
                         "business_id": user.business_id,
                         "business_name": user.business_name,
-                        "kyc_status": kyc_status
+                        "kyc_status": kyc_status,
+                        "is_business":user.is_business,
+                        "is_institute":user.is_institute,
+                        "user_type": "institute" if user.is_institute else "business",
                     })
 
                 return Response({"success": False, "error": "Invalid PIN"}, status=status.HTTP_401_UNAUTHORIZED)

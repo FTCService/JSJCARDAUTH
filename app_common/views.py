@@ -607,7 +607,7 @@ class AdminStaffLoginApi(APIView):
             password = serializer.validated_data["password"]
 
             user = authenticate(request, email=email, password=password)
-            if user and (user.is_staff or user.is_superuser):
+            if user and (user.is_staff or user.is_superuser or user.is_jobmitra):
                 login(request, user)
                 new_token = secrets.token_hex(32)
                 token, created = models.UserAuthToken.objects.update_or_create(
@@ -618,9 +618,14 @@ class AdminStaffLoginApi(APIView):
                 return Response(
                     {"message": "Login successful",
                     "token": token.key,
-                    "user_type": "admin" if user.is_superuser else "staff",
+                    "user_type": (
+                            "admin" if user.is_superuser else
+                            "staff" if user.is_staff else
+                            "jobmitra"
+                        ),
                     "is_staff": user.is_staff,
                     "is_superuser": user.is_superuser,
+                    "is_jobmitra": user.is_jobmitra, 
                     "user_id": user.id,
                     "email": user.email,},
                     status=status.HTTP_200_OK
