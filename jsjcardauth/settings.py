@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     'app_common',
+    'member',
     'admin_dashboard',
     'rest_framework',
     'drf_yasg',

@@ -6,6 +6,8 @@ app_name = "app_common"
 
 urlpatterns = [
     
+ 
+    
     path("admin/add-staff/", views.AddStaffApi.as_view(), name="add-staff"),
     path("upload-members/", views.BulkMemberUploadView.as_view(), name="upload-members"),
     path("upload-business/", business_api.BulkBusinessUploadView.as_view(), name="upload-business"),

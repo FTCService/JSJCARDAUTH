@@ -13,6 +13,7 @@ from app_common.models import User, Member,MemberAuthToken
 from . import serializers, models
 from admin_dashboard.models import CardPurpose
 import secrets
+from member.models import JobProfile
 from django.utils import timezone
 import random
 
@@ -232,6 +233,16 @@ class MemberVerifyOtpApi(APIView):
             user.card_purposes = final_purpose_list
             user.save()
 
+            # ✅ Create Job Profile
+            JobProfile.objects.create(
+                MbrCardNo=user,
+                BasicInformation={
+                    "full_name": user.full_name,
+                    "mobile_number": user.mobile_number,
+                    "email": user.email or ""
+                }
+            )
+            
             # ✅ Generate Token
             token = secrets.token_hex(32)  # Or use uuid.uuid4().hex
             models.MemberAuthToken.objects.create(
@@ -251,7 +262,8 @@ class MemberVerifyOtpApi(APIView):
                 "cardno": user.mbrcardno,
                 "card_purposes": final_purpose_list,
                 "MbrCreatedAt": user.MbrCreatedAt.strftime('%Y-%m-%d %H:%M:%S'),
-                "token": token  # ✅ Return token to client
+                "token": token,  # ✅ Return token to client
+                "job_profile_created": True
             }
 
             return Response(response_data, status=status.HTTP_200_OK)
