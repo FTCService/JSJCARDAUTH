@@ -104,6 +104,17 @@ class InstituteSignupApi(APIView):
     authentication_classes = [UserTokenAuthentication]
     permission_classes = [IsAuthenticated]
     @swagger_auto_schema(
+    operation_description="Get a list of all registered institute businesses.",
+    responses={200: serializers.InstituteSignupSerializer(many=True)}
+    )
+    def get(self, request):
+        """
+        Returns a list of all registered institutes.
+        """
+        institutes = Business.objects.filter(is_institute=True)
+        serializer = serializers.InstituteSignupSerializer(institutes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    @swagger_auto_schema(
         request_body=serializers.InstituteSignupSerializer
     )
     def post(self, request):
