@@ -25,6 +25,17 @@ urlpatterns = [
   
   path('generate-physical-cards/', views.GeneratePhysicalCardsView.as_view(), name='generate_physical_cards'),
   path('physical-cards/of-business/<int:business_id>/', views.PhysicalCardsListByBusiness.as_view(), name='physical_cards_of_business'),
+  
+  
+  path("category/", views.CategoryListCreateApi.as_view(), name="category_list_create"),
+  path("category/<int:category_id>/", views.CategoryDetailApi.as_view(), name="category_detail"),
+  path('category/profile-fields/', views.JobProfileFieldListByCategory.as_view(), name='job-profile-fields'),
+
+  
+  path("fields/", views.JobProfileFieldListApi.as_view(), name="list-fields"),
+  path("fields/create/", views.JobProfileFieldCreateApi.as_view(), name="create-field"),
+  path("fields/<int:id>/", views.JobProfileFieldDetailApi.as_view(), name="field-detail"),
+  
     
   path("add/job_mitra/", staff_api.AddJobMitraApi.as_view(), name="staff-job_mitra"),
   

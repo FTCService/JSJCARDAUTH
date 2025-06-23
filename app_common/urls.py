@@ -1,10 +1,13 @@
 from django.urls import path
 from . import views, business_api
+from helpers.primary_card_from_secondary import GetPrimaryCardAPI
 
 
 app_name = "app_common"
 
 urlpatterns = [
+    
+    path('get-primary-card/', GetPrimaryCardAPI.as_view(), name='get-primary-card'),
     
     path("admin/add-staff/", views.AddStaffApi.as_view(), name="add-staff"),
     path("upload-members/", views.BulkMemberUploadView.as_view(), name="upload-members"),
