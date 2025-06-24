@@ -87,6 +87,7 @@ class AddStaffApi(APIView):
         if serializer.is_valid():
             full_name = serializer.validated_data["full_name"]
             email = serializer.validated_data["email"]
+            mobile_number = serializer.validated_data["mobile_number"]
             password = serializer.validated_data["password"]
             employee_id = serializer.validated_data["employee_id"]
 
@@ -100,6 +101,7 @@ class AddStaffApi(APIView):
                 password=password,
                 full_name=full_name,
                 employee_id=employee_id,
+                mobile_number=mobile_number,
                 is_staff=True  
             )
 

@@ -338,39 +338,64 @@ class BusinessDetailsSerializer(serializers.ModelSerializer):
 
 
 class MemberRegistrationSerializer(serializers.ModelSerializer):
-    contact_with_country = serializers.SerializerMethodField()  # Custom field for formatted contact
+    contact_with_country = serializers.SerializerMethodField()
+
+    # Add meta fields (read from meta_data)
+    state = serializers.SerializerMethodField()
+    district = serializers.SerializerMethodField()
+    block = serializers.SerializerMethodField()
+    village = serializers.SerializerMethodField()
+    pincode = serializers.SerializerMethodField()
 
     class Meta:
         model = Member
         fields = [
-            'full_name', 'first_name', 'last_name', 'mbraddress', 'MbrPincode', 
-            'mbrcardno', 'email', 'contact_with_country', 'MbrStatus'
+            'full_name', 'first_name', 'last_name', 'mbraddress', 'MbrPincode',
+            'mbrcardno', 'email', 'contact_with_country', 'MbrStatus',
+            'state', 'district', 'block', 'village', 'pincode'
         ]
-        read_only_fields = ['mobile_number', 'pin', 'contact_with_country']  # Prevent update of 'contact' and 'pin'
+        read_only_fields = ['mobile_number', 'pin', 'contact_with_country']
 
     def get_contact_with_country(self, obj):
-        """
-        Format contact with country code (e.g., +91 7462982798).
-        """
         return f"{obj.MbrCountryCode} {obj.mobile_number}" if obj.mobile_number else None
 
+    def get_state(self, obj):
+        return obj.meta_data.get('state')
+
+    def get_district(self, obj):
+        return obj.meta_data.get('district')
+
+    def get_block(self, obj):
+        return obj.meta_data.get('block')
+
+    def get_village(self, obj):
+        return obj.meta_data.get('village')
+
+    def get_pincode(self, obj):
+        return obj.meta_data.get('pincode')
+
     def update(self, instance, validated_data):
-        """
-        Update all allowed fields and generate MbrCardNo if not set.
-        """
+        instance.full_name = validated_data.get('full_name', instance.full_name)
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
         instance.mbraddress = validated_data.get('mbraddress', instance.mbraddress)
         instance.MbrPincode = validated_data.get('MbrPincode', instance.MbrPincode)
         instance.email = validated_data.get('email', instance.email)
-
-        # Generate a random 16-digit card number if not already set
-        
         instance.MbrStatus = validated_data.get('MbrStatus', instance.MbrStatus)
-       
-        
+
+        # Update meta_data
+        meta = instance.meta_data or {}
+        meta["state"] = validated_data.get("state", meta.get("state"))
+        meta["district"] = validated_data.get("district", meta.get("district"))
+        meta["block"] = validated_data.get("block", meta.get("block"))
+        meta["village"] = validated_data.get("village", meta.get("village"))
+        meta["pincode"] = validated_data.get("pincode", meta.get("pincode"))
+        instance.meta_data = meta
+
         instance.save()
         return instance
+
+
 
 
 
