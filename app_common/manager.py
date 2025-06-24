@@ -5,7 +5,7 @@ class MyAccountManager(BaseUserManager):
     Custom user manager for handling staff and superuser creation.
     """
     
-    def create_user(self, email, password=None, full_name=None, employee_id=None, is_staff=False, is_superuser=False, is_jobmitra=False):
+    def create_user(self, email, password=None, full_name=None, employee_id=None, is_staff=False, is_superuser=False, is_jobmitra=False, meta_data=None):
         if not email:
             raise ValueError("Users must have an email address")
 
@@ -15,7 +15,8 @@ class MyAccountManager(BaseUserManager):
             employee_id=employee_id,
             is_staff=is_staff,
             is_superuser=is_superuser,
-            is_jobmitra=is_jobmitra
+            is_jobmitra=is_jobmitra,
+            meta_data=meta_data
         )
 
         user.set_password(password)  # ✅ Hash Password

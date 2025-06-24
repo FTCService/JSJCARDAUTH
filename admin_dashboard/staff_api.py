@@ -65,17 +65,31 @@ class AddJobMitraApi(APIView):
             password = serializer.validated_data["password"]
             employee_id = serializer.validated_data["employee_id"]
 
+            state = serializer.validated_data.get("state")
+            district = serializer.validated_data.get("district")
+            block = serializer.validated_data.get("block")
+            village = serializer.validated_data.get("village")
+            pincode = serializer.validated_data.get("pincode")
             # Check if the email is already used
             if User.objects.filter(email=email).exists():
                 return Response({"error": "User with this email already exists"}, status=status.HTTP_400_BAD_REQUEST)
 
+            # Build meta_data dict
+            meta_data = {
+                "state": state,
+                "district": district,
+                "block": block,
+                "village": village,
+                "pincode": pincode
+            }
             # Create staff user
             user = User.objects.create_user(
                 email=email,
                 password=password,
                 full_name=full_name,
                 employee_id=employee_id,
-                is_jobmitra=True  
+                is_jobmitra=True,
+                meta_data=meta_data
             )
 
             return Response({"message": "Job Mitra user added successfully"}, status=status.HTTP_201_CREATED)

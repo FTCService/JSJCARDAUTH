@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, staff_api
+from . import views, staff_api, job_mitra_api
 
 
 app_name= "admin_dashboard"
@@ -38,6 +38,11 @@ urlpatterns = [
   
     
   path("add/job_mitra/", staff_api.AddJobMitraApi.as_view(), name="staff-job_mitra"),
+  
+  
+  path("members/filter/", job_mitra_api.FilteredMemberListApi.as_view(), name="filtered-members"),
+  path("jobmitra/member-list/", job_mitra_api.MemberListByJobMitraLocationApi.as_view(), name="jobmitra-member-list"),
+    
   
 ]
 

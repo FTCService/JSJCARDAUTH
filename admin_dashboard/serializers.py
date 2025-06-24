@@ -69,9 +69,14 @@ class GenerateCardSerializer(serializers.Serializer):
 
 
 class JobMitraUserSerializer(serializers.ModelSerializer):
+    state = serializers.CharField(required=False)
+    district = serializers.CharField(required=False)
+    block = serializers.CharField(required=False)
+    village = serializers.CharField(required=False)
+    pincode = serializers.CharField(required=False)
     class Meta:
         model = User
-        fields = ["id", "full_name", "email", "password", "employee_id", "mobile_number", "is_jobmitra"]
+        fields = ["id", "full_name", "email", "password", "employee_id", "mobile_number", "is_jobmitra",'state', 'district', 'block', 'village', 'pincode']
         extra_kwargs = {
             "password": {"write_only": True},
             "is_jobmitra": {"read_only": True},
