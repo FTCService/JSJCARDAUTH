@@ -572,6 +572,7 @@ class MemberDetailsByCardNoAPI(APIView):
             return Response({"message": "Member not found."}, status=status.HTTP_200_OK)
 
         serializer = serializers.MemberSerializer(member)
+        # print(serializer.data)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     

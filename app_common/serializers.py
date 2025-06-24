@@ -304,6 +304,12 @@ class MemberResendOtpSerializer(serializers.Serializer):
 
 # this serializer for send to business all details of member 
 class MemberSerializer(serializers.ModelSerializer):
+    state = serializers.SerializerMethodField()
+    district = serializers.SerializerMethodField()
+    block = serializers.SerializerMethodField()
+    village = serializers.SerializerMethodField()
+    pincode = serializers.SerializerMethodField()
+
     class Meta:
         model = Member
         fields = [
@@ -321,7 +327,30 @@ class MemberSerializer(serializers.ModelSerializer):
             "MbrReferalId",
             "MbrCreatedAt",
             "MbrUpdatedAt",
+
+            # From meta_data
+            "state",
+            "district",
+            "block",
+            "village",
+            "pincode",
         ]
+
+    def get_state(self, obj):
+        return obj.meta_data.get("state")
+
+    def get_district(self, obj):
+        return obj.meta_data.get("district")
+
+    def get_block(self, obj):
+        return obj.meta_data.get("block")
+
+    def get_village(self, obj):
+        return obj.meta_data.get("village")
+
+    def get_pincode(self, obj):
+        return obj.meta_data.get("pincode")
+
         
         
         
