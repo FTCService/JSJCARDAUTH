@@ -5,10 +5,11 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from app_common.models import Member,Business,User, UserAuthToken
+from app_common.models import Member,Business,User, UserAuthToken, GovernmentUser
 from . import serializers
 from app_common.authentication import UserTokenAuthentication
 from django.contrib.auth import logout
+from app_common.serializers import GovernmentUserSerializer
 
 
 
@@ -193,3 +194,32 @@ class InstituteSignupApi(APIView):
 
         # Step 7: If validation fails
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    
+class AddGovernmentUserApi(APIView):
+    """
+    API to add and list Government users.
+    """
+    authentication_classes = [UserTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        request_body=GovernmentUserSerializer,
+        tags=["Government"]
+    )
+    def post(self, request):
+        serializer = GovernmentUserSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Government user created successfully"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @swagger_auto_schema(
+        responses={200: GovernmentUserSerializer(many=True)},
+        tags=["Government"]
+    )
+    def get(self, request):
+        users = GovernmentUser.objects.filter(is_government=True, is_active=True)
+        serializer = GovernmentUserSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

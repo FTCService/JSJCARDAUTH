@@ -27,6 +27,7 @@ AUTH_USER_MODEL = "app_common.User"
 AUTHENTICATION_BACKENDS = [
     'app_common.authentication.MemberAuthBackend',
     "app_common.authentication.AdminAuthBackend",
+    "app_common.authentication.GovernmentAuthBackend",
 ]
 
 
