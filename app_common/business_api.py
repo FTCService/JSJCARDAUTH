@@ -318,7 +318,7 @@ class BusinessLogoutApi(APIView):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
-        operation_description="Logs out the currently authenticated member.",
+        operation_description="Logs out the currently authenticated business.",
         responses={
             200: openapi.Response(description="Logout Successful", examples={"application/json": {"message": "Logout Successful"}}),
             401: openapi.Response(description="Unauthorized - Invalid or missing token"),
