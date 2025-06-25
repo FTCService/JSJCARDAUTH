@@ -322,8 +322,6 @@ class MemberSerializer(serializers.ModelSerializer):
             "MbrStatus",
             "card_purposes",
             "mbrcardno",
-            "mbraddress",
-            "MbrPincode",
             "MbrReferalId",
             "MbrCreatedAt",
             "MbrUpdatedAt",
