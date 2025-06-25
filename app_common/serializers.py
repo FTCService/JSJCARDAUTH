@@ -337,19 +337,19 @@ class MemberSerializer(serializers.ModelSerializer):
         ]
 
     def get_state(self, obj):
-        return obj.meta_data.get("state")
+        return obj.address.get("state")
 
     def get_district(self, obj):
-        return obj.meta_data.get("district")
+        return obj.address.get("district")
 
     def get_block(self, obj):
-        return obj.meta_data.get("block")
+        return obj.address.get("block")
 
     def get_village(self, obj):
-        return obj.meta_data.get("village")
+        return obj.address.get("village")
 
     def get_pincode(self, obj):
-        return obj.meta_data.get("pincode")
+        return obj.address.get("pincode")
 
         
         
@@ -379,7 +379,7 @@ class MemberRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
         fields = [
-            'full_name', 'first_name', 'last_name', 'mbraddress', 'MbrPincode',
+            'full_name', 'first_name', 'last_name',
             'mbrcardno', 'email', 'contact_with_country', 'MbrStatus',
             'state', 'district', 'block', 'village', 'pincode'
         ]
@@ -389,37 +389,35 @@ class MemberRegistrationSerializer(serializers.ModelSerializer):
         return f"{obj.MbrCountryCode} {obj.mobile_number}" if obj.mobile_number else None
 
     def get_state(self, obj):
-        return obj.meta_data.get('state')
+        return obj.address.get('state')
 
     def get_district(self, obj):
-        return obj.meta_data.get('district')
+        return obj.address.get('district')
 
     def get_block(self, obj):
-        return obj.meta_data.get('block')
+        return obj.address.get('block')
 
     def get_village(self, obj):
-        return obj.meta_data.get('village')
+        return obj.address.get('village')
 
     def get_pincode(self, obj):
-        return obj.meta_data.get('pincode')
+        return obj.address.get('pincode')
 
     def update(self, instance, validated_data):
         instance.full_name = validated_data.get('full_name', instance.full_name)
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
-        instance.mbraddress = validated_data.get('mbraddress', instance.mbraddress)
-        instance.MbrPincode = validated_data.get('MbrPincode', instance.MbrPincode)
         instance.email = validated_data.get('email', instance.email)
         instance.MbrStatus = validated_data.get('MbrStatus', instance.MbrStatus)
 
         # Update meta_data
-        meta = instance.meta_data or {}
+        meta = instance.address or {}
         meta["state"] = validated_data.get("state", meta.get("state"))
         meta["district"] = validated_data.get("district", meta.get("district"))
         meta["block"] = validated_data.get("block", meta.get("block"))
         meta["village"] = validated_data.get("village", meta.get("village"))
         meta["pincode"] = validated_data.get("pincode", meta.get("pincode"))
-        instance.meta_data = meta
+        instance.address = meta
 
         instance.save()
         return instance

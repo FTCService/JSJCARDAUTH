@@ -75,7 +75,7 @@ class AddJobMitraApi(APIView):
                 return Response({"error": "User with this email already exists"}, status=status.HTTP_400_BAD_REQUEST)
 
             # Build meta_data dict
-            meta_data = {
+            address = {
                 "state": state,
                 "district": district,
                 "block": block,
@@ -89,7 +89,7 @@ class AddJobMitraApi(APIView):
                 full_name=full_name,
                 employee_id=employee_id,
                 is_jobmitra=True,
-                meta_data=meta_data
+                address=address
             )
 
             return Response({"message": "Job Mitra user added successfully"}, status=status.HTTP_201_CREATED)

@@ -38,6 +38,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     # ✅ New Role Field
     is_jobmitra = models.BooleanField(default=False)
     token = models.CharField(max_length=100, null=True, blank=True)
+    address = models.JSONField(default=dict)
     meta_data = models.JSONField(default=dict)
 
     USERNAME_FIELD = "email"
@@ -85,15 +86,14 @@ class Member(AbstractBaseUser, PermissionsMixin):
 
     card_purposes = models.JSONField(default=list)
     
-    mbrcardno = models.BigIntegerField(unique=True, null=True, blank=True,)
-    mbraddress = models.CharField(max_length=255, null=True, blank=True)  
-    MbrPincode = models.CharField(max_length=6, null=True, blank=True)  
+    mbrcardno = models.BigIntegerField(unique=True, null=True, blank=True,)  
     MbrReferalId = models.CharField(max_length=50, null=True, blank=True)  
     
     MbrCreatedBy = models.CharField(max_length=255, null=True, blank=True)  
     MbrCreatedAt = models.DateTimeField(default=timezone.now)  
     MbrUpdatedBy = models.CharField(max_length=255, null=True, blank=True)  
-    MbrUpdatedAt = models.DateTimeField(auto_now=True) 
+    MbrUpdatedAt = models.DateTimeField(auto_now=True)
+    address = models.JSONField(default=dict) 
     meta_data = models.JSONField(default=dict)  
     
 
