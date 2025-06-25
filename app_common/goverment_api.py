@@ -88,3 +88,39 @@ class GovernmentLogoutApi(APIView):
                 "error": "Something went wrong.",
                 "details": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            
+
+
+class VerifyGovernmentTokenApi(APIView):
+    """
+    Endpoint to verify a GovernmentAuthToken from another service.
+    """
+
+    def post(self, request):
+        token = request.data.get("token")
+        if not token:
+            return Response({"detail": "Token required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            gov_token = models.GovernmentAuthToken.objects.get(key=token)
+            user = gov_token.user
+
+            if not isinstance(user, models.GovernmentUser):
+                return Response({"detail": "Invalid user type."}, status=status.HTTP_401_UNAUTHORIZED)
+
+            return Response({
+                "valid": True,
+                "user_id": user.id,
+                "full_name": user.full_name,
+                "email": user.email,
+                "mobile_number": user.mobile_number,
+                "department": user.department,
+                "designation": user.designation
+            })
+
+        except models.GovernmentAuthToken.DoesNotExist:
+            return Response({
+                "valid": False,
+                "detail": "Invalid or expired token."
+            }, status=status.HTTP_401_UNAUTHORIZED)
