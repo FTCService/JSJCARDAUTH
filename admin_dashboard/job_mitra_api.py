@@ -117,9 +117,9 @@ class MemberListByJobMitraLocationApi(APIView):
         jobmitra = request.user
 
         # Extract location info from meta_data
-        village = jobmitra.meta_data.get("village")
-        pincode = jobmitra.meta_data.get("pincode")
-        block = jobmitra.meta_data.get("block")
+        village = jobmitra.address.get("village")
+        pincode = jobmitra.address.get("pincode")
+        block = jobmitra.address.get("block")
 
         if not any([village, pincode, block]):
             return Response({
