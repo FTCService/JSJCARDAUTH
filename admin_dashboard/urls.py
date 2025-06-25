@@ -39,7 +39,7 @@ urlpatterns = [
     
   path("add/job_mitra/", staff_api.AddJobMitraApi.as_view(), name="staff-job_mitra"),
   
-  
+  path("jobmitra/add/member/", job_mitra_api.AddMemberByJobMitraApi.as_view(), name="add-member"),
   path("members/filter/", job_mitra_api.FilteredMemberListApi.as_view(), name="filtered-members"),
   path("jobmitra/member-list/", job_mitra_api.MemberListByJobMitraLocationApi.as_view(), name="jobmitra-member-list"),
     

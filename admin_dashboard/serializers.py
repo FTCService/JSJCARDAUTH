@@ -186,6 +186,21 @@ class JobProfileFieldSerializer(serializers.ModelSerializer):
         return data
     
     
+class JobMitraAddMemberSerializer(serializers.ModelSerializer):
+    state = serializers.CharField(required=False)
+    district = serializers.CharField(required=False)
+    block = serializers.CharField(required=False)
+    village = serializers.CharField(required=False)
+    pincode = serializers.CharField(required=False)
+    class Meta:
+        model = Member
+        fields = ["id", "full_name", "email", "pin", "mobile_number",'state', 'district', 'block', 'village', 'pincode']
+        extra_kwargs = {
+            "pin": {"write_only": True},
+            "id": {"read_only": True},
+        }
+
+    
     
 
 
