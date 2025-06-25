@@ -5,20 +5,38 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from app_common.models import Member,Business,User, BusinessKyc
+from app_common.models import Member,Business,User, UserAuthToken
 from . import serializers
-from admin_dashboard.models import CardPurpose
-from helpers.utils import send_otp_to_mobile
-from django.shortcuts import get_object_or_404
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
 from app_common.authentication import UserTokenAuthentication
-from app_common.models import PhysicalCard, Business, TempBusinessUser
-from collections import defaultdict
-import random
+from django.contrib.auth import logout
 
 
 
+class UserLogoutApi(APIView):
+    """
+    API for business logout (removes authentication token and ends session).
+    """
+    authentication_classes = [UserTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="Logs out the currently authenticated member.",
+        responses={
+            200: openapi.Response(description="Logout Successful", examples={"application/json": {"message": "Logout Successful"}}),
+            401: openapi.Response(description="Unauthorized - Invalid or missing token"),
+            500: openapi.Response(description="Internal Server Error", examples={"application/json": {"error": "Something went wrong.", "details": "Error message"}})
+        },
+    )
+    def post(self, request):
+        try:
+            UserAuthToken.objects.filter(user=request.user.id).delete()
+            logout(request)
+            return Response({"message": "Logout Successful"}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": "Something went wrong.", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        
 class StaffDashboard(APIView):
     """
     API to get the total count of registered businesses.
