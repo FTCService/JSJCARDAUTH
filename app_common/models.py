@@ -1,10 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
-from .manager import MyAccountManager, MemberManager, BusinessManager
+from .manager import MyAccountManager, MemberManager, BusinessManager, GovernmentUserManager
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 import random
-from django.core.validators import validate_email
+
 # ✅ TempMemberUser (for OTP verification)
 class TempMemberUser(models.Model):
     full_name = models.CharField(max_length=255, null=True, blank=True)
@@ -48,7 +48,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email if self.email else "No Email"
-    
+
 
 class UserAuthToken(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="admin_auth_token")
@@ -58,9 +58,33 @@ class UserAuthToken(models.Model):
     def __str__(self):
         return f"Business {self.user} - {self.key}"
 
+class GovernmentUser(AbstractBaseUser):
+    email = models.EmailField(unique=True)
+    full_name = models.CharField(max_length=255)
+    mobile_number = models.CharField(max_length=15, unique=True)
+    department = models.CharField(max_length=255)
+    designation = models.CharField(max_length=255)
+
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    is_government = models.BooleanField(default=True)
+    date_joined = models.DateTimeField(default=timezone.now)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    objects = GovernmentUserManager()
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['full_name', 'mobile_number']
     
 
+    def __str__(self):
+        return f"{self.full_name} ({self.email})"
 
+class GovernmentAuthToken(models.Model):
+    user = models.ForeignKey(GovernmentUser, on_delete=models.CASCADE)
+    key = models.CharField(max_length=128, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 # ✅ Member Model
 class Member(AbstractBaseUser, PermissionsMixin):

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from app_common.models import User, TempMemberUser, Member, TempBusinessUser, Business, BusinessKyc, PhysicalCard, CardMapper
+from app_common.models import User, TempMemberUser, Member, TempBusinessUser, Business, BusinessKyc, PhysicalCard, CardMapper, GovernmentUser
 import re
 from django.contrib.auth.hashers import check_password
 
@@ -25,6 +25,12 @@ class AdminStaffLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
     
+
+
+
+class GovermentLoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
     
     
 
@@ -737,5 +743,22 @@ class PhysicalCardSerializer(serializers.ModelSerializer):
 
 
 
-#============================ Job Mitra ========================
+#============================ govermnet users ========================
 
+class GovernmentUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GovernmentUser
+        fields = [
+            "id", "email", "full_name", "mobile_number",
+            "department", "designation", "is_government", "password"
+        ]
+        extra_kwargs = {
+            "password": {"write_only": True}
+        }
+
+    def create(self, validated_data):
+        password = validated_data.pop("password")
+        user = GovernmentUser(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user

@@ -2,7 +2,7 @@ from django.contrib.auth.backends import BaseBackend
 from django.contrib.auth.hashers import check_password
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
-from .models import Member, MemberAuthToken, BusinessAuthToken, Business, User, UserAuthToken
+from .models import Member, MemberAuthToken, BusinessAuthToken, Business, User, UserAuthToken, GovernmentUser, GovernmentAuthToken
 
 class MemberAuthBackend(BaseBackend):
     def authenticate(self, request, username=None, pin=None):  # mobile_number can be email too
@@ -47,6 +47,24 @@ class AdminAuthBackend(BaseBackend):
         except User.DoesNotExist:
             return None
 
+class GovernmentAuthBackend(BaseBackend):
+    """
+    Custom authentication backend for Government users (login via email & password).
+    """
+
+    def authenticate(self, request, email=None, password=None):
+        try:
+            user = GovernmentUser.objects.get(email=email)
+            if user.check_password(password) and user.is_active and user.is_government:
+                return user
+        except GovernmentUser.DoesNotExist:
+            return None
+
+    def get_user(self, user_id):
+        try:
+            return GovernmentUser.objects.get(pk=user_id)
+        except GovernmentUser.DoesNotExist:
+            return None
 
 
 class UserTokenAuthentication(BaseAuthentication):
@@ -71,6 +89,27 @@ class UserTokenAuthentication(BaseAuthentication):
         except UserAuthToken.DoesNotExist:
             raise AuthenticationFailed("Invalid token.")
 
+
+class GovernmentTokenAuthentication(BaseAuthentication):
+    def authenticate(self, request):
+        auth_header = request.headers.get("Authorization")
+
+        if not auth_header or not auth_header.startswith("Token "):
+            return None
+
+        token_key = auth_header.split("Token ")[1]
+
+        try:
+            token = GovernmentAuthToken.objects.get(key=token_key)
+            user = token.user
+
+            if not isinstance(user, GovernmentUser):
+                raise AuthenticationFailed("Invalid user type.")
+
+            return (user, None)
+
+        except GovernmentAuthToken.DoesNotExist:
+            raise AuthenticationFailed("Invalid or expired token.")
 
 
 class MemberTokenAuthentication(BaseAuthentication):

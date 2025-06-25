@@ -115,8 +115,7 @@ class BusinessListApi(APIView):
         responses={200: serializers.BusinessSerializer(many=True)}
     )
     def get(self, request):
-        businesses = Business.objects.all()
-        
+        businesses = Business.objects.filter(is_business=True)
         serializer = serializers.BusinessSerializer(businesses, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     

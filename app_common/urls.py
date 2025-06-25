@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, business_api
+from . import views, business_api, goverment_api
 
 
 app_name = "app_common"
@@ -57,4 +57,8 @@ urlpatterns = [
     path("admin-staff-login/", views.AdminStaffLoginApi.as_view(), name="admin-staff-login"),
     
     path("user/verify-token/", views.VerifyAdminStaffTokenApi.as_view(), name="user-verify-token"),
+    
+    
+    path("goverment/login/", goverment_api.GovermentLoginApi.as_view(), name="goverment-login"),
+    path("goverment/logout/", goverment_api.GovernmentLogoutApi.as_view(), name="goverment-logout"),
 ]
