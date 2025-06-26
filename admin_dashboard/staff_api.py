@@ -81,6 +81,7 @@ class AddJobMitraApi(APIView):
         if serializer.is_valid():
             full_name = serializer.validated_data["full_name"]
             email = serializer.validated_data["email"]
+            mobile_number = serializer.validated_data["mobile_number"]
             password = serializer.validated_data["password"]
             employee_id = serializer.validated_data["employee_id"]
 
@@ -106,6 +107,7 @@ class AddJobMitraApi(APIView):
                 email=email,
                 password=password,
                 full_name=full_name,
+                mobile_number=mobile_number,
                 employee_id=employee_id,
                 is_jobmitra=True,
                 address=address
@@ -115,13 +117,13 @@ class AddJobMitraApi(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     @swagger_auto_schema(
-        responses={200: serializers.JobMitraUserSerializer(many=True)},
+        responses={200: serializers.JobMitraUserListSerializer(many=True)},
         tags=["Job Mitra"]
     )
     def get(self, request):
         """Retrieve all job mitra users."""
         staff_users = User.objects.filter(is_jobmitra=True)
-        serializer = serializers.JobMitraUserSerializer(staff_users, many=True)
+        serializer = serializers.JobMitraUserListSerializer(staff_users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     
@@ -138,14 +140,14 @@ class InstituteSignupApi(APIView):
     permission_classes = [IsAuthenticated]
     @swagger_auto_schema(
     operation_description="Get a list of all registered institute businesses.",
-    responses={200: serializers.InstituteSignupSerializer(many=True)}
+    responses={200: serializers.InstituteListSerializer(many=True)}
     )
     def get(self, request):
         """
         Returns a list of all registered institutes.
         """
         institutes = Business.objects.filter(is_institute=True)
-        serializer = serializers.InstituteSignupSerializer(institutes, many=True)
+        serializer = serializers.InstituteListSerializer(institutes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     @swagger_auto_schema(
         request_body=serializers.InstituteSignupSerializer

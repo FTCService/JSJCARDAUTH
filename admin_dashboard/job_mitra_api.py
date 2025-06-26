@@ -199,7 +199,7 @@ class AddMemberByJobMitraApi(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     @swagger_auto_schema(
-        responses={200: serializers.JobMitraAddMemberSerializer(many=True)},
+        responses={200: serializers.JobMitraMemberListSerializer(many=True)},
         tags=["Job Mitra"]
     )
     def get(self, request):
@@ -207,5 +207,5 @@ class AddMemberByJobMitraApi(APIView):
    
         referal_id = request.user.employee_id
         staff_users = Member.objects.filter(MbrReferalId=referal_id)
-        serializer = serializers.JobMitraAddMemberSerializer(staff_users, many=True)
+        serializer = serializers.JobMitraMemberListSerializer(staff_users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
