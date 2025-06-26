@@ -81,7 +81,41 @@ class JobMitraUserSerializer(serializers.ModelSerializer):
             "password": {"write_only": True},
             "is_jobmitra": {"read_only": True},
         }
+    
+    
+    
+class JobMitraUserListSerializer(serializers.ModelSerializer):
+    state = serializers.SerializerMethodField()
+    district = serializers.SerializerMethodField()
+    block = serializers.SerializerMethodField()
+    village = serializers.SerializerMethodField()
+    pincode = serializers.SerializerMethodField()
 
+    class Meta:
+        model = User
+        fields = [
+            "id", "full_name", "email", "mobile_number", "employee_id",
+            "is_jobmitra", "state", "district", "block", "village", "pincode"
+        ]
+
+    def get_state(self, obj):
+        return obj.address.get("state") if obj.address else None
+
+    def get_district(self, obj):
+        return obj.address.get("district") if obj.address else None
+
+    def get_block(self, obj):
+        return obj.address.get("block") if obj.address else None
+
+    def get_village(self, obj):
+        return obj.address.get("village") if obj.address else None
+
+    def get_pincode(self, obj):
+        return obj.address.get("pincode") if obj.address else None
+    
+    
+    
+    
     
 class InstituteSignupSerializer(serializers.ModelSerializer):
     """
@@ -147,7 +181,21 @@ class InstituteSignupSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("PIN must be exactly 4 digits and contain only numbers.")
         return value
 
+
+class InstituteListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Business
+        fields = [
+            "id",
+            "business_id",
+            "email",
+            "mobile_number",
+            "business_name",
+            "business_type",
+        ]
+        read_only_fields = fields     
     
+
 
 class CategorySerializer(serializers.ModelSerializer):
     """Serializer for Category"""
@@ -202,6 +250,36 @@ class JobMitraAddMemberSerializer(serializers.ModelSerializer):
 
     
     
+class JobMitraMemberListSerializer(serializers.ModelSerializer):
+    state = serializers.SerializerMethodField()
+    district = serializers.SerializerMethodField()
+    block = serializers.SerializerMethodField()
+    village = serializers.SerializerMethodField()
+    pincode = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Member
+        fields = [
+            "id", "full_name", "email", "mobile_number",
+            "MbrStatus", "mbrcardno", "MbrCreatedAt", "MbrUpdatedAt",
+            "state", "district", "block", "village", "pincode",
+            "MbrReferalId"
+        ]
+
+    def get_state(self, obj):
+        return obj.address.get("state")
+
+    def get_district(self, obj):
+        return obj.address.get("district")
+
+    def get_block(self, obj):
+        return obj.address.get("block")
+
+    def get_village(self, obj):
+        return obj.address.get("village") 
+
+    def get_pincode(self, obj):
+        return obj.address.get("pincode") 
 
 
 
