@@ -62,4 +62,7 @@ urlpatterns = [
     path("goverment/login/", goverment_api.GovermentLoginApi.as_view(), name="goverment-login"),
     path("goverment/logout/", goverment_api.GovernmentLogoutApi.as_view(), name="goverment-logout"),
     path("goverment/verify-token/", goverment_api.VerifyGovernmentTokenApi.as_view(), name="goverment-verify-token"),
+    
+    path('business/basic-details/', views.BusinessSearchAPIView.as_view(), name='business-basic-details'),
+
 ]

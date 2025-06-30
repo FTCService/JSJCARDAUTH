@@ -762,3 +762,11 @@ class GovernmentUserSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         return user
+    
+    
+    
+
+class BusinessShortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Business
+        fields = ['business_id', 'business_name']
