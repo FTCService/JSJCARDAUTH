@@ -669,3 +669,5 @@ class PhysicalCardsByBusinessID(APIView):
         physical_cards = models.PhysicalCard.objects.filter(business__business_id=request.user.business_id)
         serializer = serializers.PhysicalCardSerializer(physical_cards, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
