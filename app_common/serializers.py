@@ -32,7 +32,14 @@ class GovermentLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
     
-    
+class BusinessListSerializer(serializers.ModelSerializer):
+    """
+    Serializer for listing Business details.
+    """
+    class Meta:
+        model = Business
+        fields = ['id','business_id', 'business_name', ]
+
 
 ### 🔹 MEMBER SIGNUP SERIALIZER ###
 class MemberSignupSerializer(serializers.ModelSerializer):
@@ -356,8 +363,17 @@ class MemberSerializer(serializers.ModelSerializer):
         return obj.address.get("pincode")
 
         
-        
-        
+
+class MemberListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Member
+        fields = [
+            "full_name",
+            "mbrcardno",
+          
+        ]        
+
+
 class BusinessDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Business

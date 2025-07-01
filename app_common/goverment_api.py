@@ -164,6 +164,64 @@ class BusinessSummaryAPIView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class BusinessListgovernmentApi(APIView):
+    """
+    API to list all registered businesses.
+    """
+    authentication_classes = [GovernmentTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="Retrieve a list of all registered businesses.",
+        responses={200: serializers.BusinessListSerializer(many=True)},tags=["Government"]
+    )
+    def get(self, request):
+        businesses = models.Business.objects.filter(is_business=True,is_institute=False)
+        serializer = serializers.BusinessListSerializer(businesses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+class InstituteListgovernmentApi(APIView):
+    """
+    API to list all registered businesses.
+    """
+    authentication_classes = [GovernmentTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="Retrieve a list of all registered businesses.",
+        responses={200: serializers.BusinessListSerializer(many=True)},
+        tags=["Government"]
+    )
+    def get(self, request):
+        businesses = models.Business.objects.filter(is_institute=False)
+        serializer = serializers.BusinessListSerializer(businesses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+class StudentListgovernmentApi(APIView):
+    """
+    API to list all registered members.
+    """
+    authentication_classes = [GovernmentTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="Retrieve a list of all registered members.",
+        responses={200: serializers.MemberListSerializer(many=True)},
+        tags=["Government"]
+    )
+    def get(self, request):
+        members = models.Member.objects.all()
+        serializer = serializers.MemberListSerializer(members, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+    
+    
+    
 # class BusinessSummaryAPIView(APIView):
 #     """
 #     Returns list of registered institutes and companies with job counts.

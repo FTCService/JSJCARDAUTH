@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, business_api, goverment_api, institute
+from . import institute_api, views, business_api, goverment_api
 
 
 app_name = "app_common"
@@ -62,11 +62,14 @@ urlpatterns = [
     path("goverment/login/", goverment_api.GovermentLoginApi.as_view(), name="goverment-login"),
     path("goverment/logout/", goverment_api.GovernmentLogoutApi.as_view(), name="goverment-logout"),
     path("goverment/verify-token/", goverment_api.VerifyGovernmentTokenApi.as_view(), name="goverment-verify-token"),
-
     path("admin/dashboard/business-summary/", goverment_api.BusinessSummaryAPIView.as_view(), name="business-summary"),
+    path("company/list/", goverment_api.BusinessListgovernmentApi.as_view(), name="business-list"),
+    path("institute/list/", goverment_api.InstituteListgovernmentApi.as_view(), name="institute-list"),
     
+    path("student/list/", goverment_api.StudentListgovernmentApi.as_view(), name="student-list"),
+
     
-    path("institute/add/member", institute.AddMemberByInstituteApi.as_view(), name="institute-add-member"),
+    path("institute/add/member/", institute_api.AddMemberByInstituteApi.as_view(), name="institute-add-member"),
    
    
    
