@@ -5,7 +5,10 @@ import re
 
 
         
-        
+class BusinessShortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Business
+        fields = ['business_id', 'business_name']
 
 class MemberSerializer(serializers.ModelSerializer):
     password = serializers.CharField(required=False, write_only=True)

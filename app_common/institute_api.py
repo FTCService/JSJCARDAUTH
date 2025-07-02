@@ -31,7 +31,26 @@ class AddMemberByInstituteApi(APIView):
    
     def post(self, request):
         referal_id = request.user.business_id
-        serializer = serializers.JobMitraAddMemberSerializer(data=request.data)
+        data = request.data
+
+        # ✅ Check for existing mobile/email BEFORE serializer validation
+        email = data.get("email")
+        mobile_number = data.get("mobile_number")
+
+        if Member.objects.filter(email=email).exists():
+            return Response({
+                "success": False,
+                "message": "Member with this email already exists."
+            }, status=status.HTTP_200_OK)
+
+        if Member.objects.filter(mobile_number=mobile_number).exists():
+            return Response({
+                "success": False,
+                "message": "Member with this mobile number already exists."
+            }, status=status.HTTP_200_OK)
+
+        # Now validate the rest
+        serializer = serializers.JobMitraAddMemberSerializer(data=data)
         if serializer.is_valid():
             full_name = serializer.validated_data["full_name"]
             email = serializer.validated_data["email"]
@@ -42,10 +61,7 @@ class AddMemberByInstituteApi(APIView):
             block = serializer.validated_data.get("block")
             village = serializer.validated_data.get("village")
             pincode = serializer.validated_data.get("pincode")
-            # Check if the email is already used
-            if Member.objects.filter(email=email, mobile_number=mobile_number).exists():
-                return Response({"error": "User with this email already exists"}, status=status.HTTP_400_BAD_REQUEST)
-
+            
             # Build meta_data dict
             address = {
                 "state": state,

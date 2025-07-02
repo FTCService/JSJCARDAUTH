@@ -10,6 +10,7 @@ from . import serializers
 from app_common.authentication import UserTokenAuthentication
 from django.contrib.auth import logout
 from app_common.serializers import GovernmentUserSerializer
+from django.db.models import Q
 
 
 
@@ -225,3 +226,69 @@ class AddGovernmentUserApi(APIView):
         users = GovernmentUser.objects.filter(is_government=True, is_active=True)
         serializer = GovernmentUserSerializer(users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+    
+    
+class BusinessSearchAPIView(APIView):
+    """
+    API to search businesses by business_id or business_name (partial match).
+    """
+
+    @swagger_auto_schema(
+        operation_summary="Search Businesses",
+        operation_description="Search businesses by partial business_id or business_name as a query parameter.",
+        manual_parameters=[
+            openapi.Parameter(
+                'query',
+                openapi.IN_QUERY,
+                description="Search keyword (partial business ID or name)",
+                type=openapi.TYPE_STRING,
+                required=True
+            )
+        ],
+        tags=["Business"],
+        responses={
+            200: openapi.Response(
+                description="Matching businesses",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "success": openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                        "message": openapi.Schema(type=openapi.TYPE_STRING),
+                        "data": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Items(
+                                type=openapi.TYPE_OBJECT,
+                                properties={
+                                    "business_id": openapi.Schema(type=openapi.TYPE_STRING),
+                                    "business_name": openapi.Schema(type=openapi.TYPE_STRING),
+                                }
+                            )
+                        )
+                    }
+                )
+            ),
+            400: "Query parameter missing"
+        }
+    )
+    def get(self, request):
+        query = request.query_params.get("query")
+
+        if not query:
+            return Response({
+                "success": False,
+                "message": "Please provide a 'query' parameter."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Search by partial business_id or name
+        businesses = Business.objects.filter(
+            Q(business_id__icontains=query) | Q(business_name__icontains=query)
+        )
+
+        serializer = serializers.BusinessShortSerializer(businesses, many=True)
+        return Response({
+            "success": True,
+            "message": "Matching businesses found.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
