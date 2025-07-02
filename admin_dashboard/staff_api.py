@@ -234,8 +234,8 @@ class BusinessSearchAPIView(APIView):
     """
     API to search businesses by business_id or business_name (partial match).
     """
-    authentication_classes = [UserTokenAuthentication]
-    permission_classes = [IsAuthenticated]
+    # authentication_classes = [UserTokenAuthentication]
+    # permission_classes = [IsAuthenticated]
     @swagger_auto_schema(
         operation_summary="Search Businesses",
         operation_description="Search businesses by partial business_id or business_name as a query parameter.",
