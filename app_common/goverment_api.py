@@ -148,12 +148,13 @@ class BusinessSummaryAPIView(APIView):
            
             # Companies
             companies = models.Business.objects.filter(is_business=True, is_institute=False).count()
-            
+            total_students = models.Member.objects.filter().count()
 
             return Response({
                 "success": True,
                 "institutes": institutes,
-                "companies": companies
+                "companies": companies,
+                "total_students":total_students
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
