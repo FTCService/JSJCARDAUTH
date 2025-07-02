@@ -195,7 +195,7 @@ class InstituteListgovernmentApi(APIView):
         tags=["Government"]
     )
     def get(self, request):
-        businesses = models.Business.objects.filter(is_institute=False)
+        businesses = models.Business.objects.filter(is_institute=True)
         serializer = serializers.BusinessListSerializer(businesses, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
