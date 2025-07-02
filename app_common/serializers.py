@@ -33,13 +33,19 @@ class GovermentLoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
     
 class BusinessListSerializer(serializers.ModelSerializer):
-    """
-    Serializer for listing Business details.
-    """
+    job_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Business
-        fields = ['id','business_id', 'business_name', ]
+        fields = ['id', 'business_id', 'business_name', 'job_count']
 
+    def get_job_count(self, obj):
+        job_counts = self.context.get("job_counts", {})  # ✅ FIXED
+        return job_counts.get(str(obj.business_id), 0)
+
+    
+    
+    
 
 ### 🔹 MEMBER SIGNUP SERIALIZER ###
 class MemberSignupSerializer(serializers.ModelSerializer):

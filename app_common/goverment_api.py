@@ -12,7 +12,8 @@ import secrets
 from django.utils import timezone
 from .authentication import GovernmentTokenAuthentication
 from django.contrib.auth.hashers import check_password, make_password
-
+import requests
+from django.conf import settings
 
 
 
@@ -167,19 +168,38 @@ class BusinessSummaryAPIView(APIView):
 
 class BusinessListgovernmentApi(APIView):
     """
-    API to list all registered businesses.
+    API to list all registered businesses with job count.
     """
     authentication_classes = [GovernmentTokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
-        operation_description="Retrieve a list of all registered businesses.",
-        responses={200: serializers.BusinessListSerializer(many=True)},tags=["Government"]
+        operation_description="Retrieve a list of all registered businesses and their job counts.",
+        responses={200: serializers.BusinessListSerializer(many=True)},
+        tags=["Government"]
     )
     def get(self, request):
-        businesses = models.Business.objects.filter(is_business=True,is_institute=False)
-        serializer = serializers.BusinessListSerializer(businesses, many=True)
+        businesses = models.Business.objects.filter(is_business=True, is_institute=False)
+        job_counts = {}
+
+        for c in businesses:
+            try:
+                response = requests.get(
+                    f"{settings.JOB_SERVER_URL}/goverment/job/count-by-business/",
+                    params={"business_id": c.business_id},
+                    timeout=5
+                )
+                if response.status_code == 200:
+                    job_counts[c.business_id] = response.json().get("job_count", 0)
+                   
+                else:
+                    job_counts[c.business_id] = 0
+            except requests.RequestException:
+                job_counts[c.business_id] = 0  # fallback on error
+
+        serializer = serializers.BusinessListSerializer(businesses, many=True, context={"job_counts": job_counts})
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 
 
@@ -223,59 +243,3 @@ class StudentListgovernmentApi(APIView):
     
 
     
-# class BusinessSummaryAPIView(APIView):
-#     """
-#     Returns list of registered institutes and companies with job counts.
-#     """
-
-#     @swagger_auto_schema(
-#         operation_description="Get list of registered institutes and companies with job counts.",
-#         responses={
-#             200: openapi.Response(description="Business summary fetched successfully"),
-#             500: openapi.Response(description="Server error")
-#         },
-#         tags=["Government"]
-#     )
-#     def get(self, request):
-#         try:
-#             # Institutes
-#             institutes = models.Business.objects.filter(is_institute=True)
-#             institute_list = [{"name": i.business_name} for i in institutes]
-
-#             # Companies
-#             companies = models.Business.objects.filter(is_business=True, is_institute=False)
-#             company_list = []
-
-#             # Call external job service to fetch job counts
-#             for c in companies:
-#                 job_count = 0
-#                 try:
-#                     response = requests.get(
-#                         f"{settings.JOB_SERVER_URL}/job/count-by-business/",
-#                         params={"business_id": c.id},
-#                         timeout=5
-#                     )
-#                     if response.status_code == 200:
-#                         job_count = response.json().get("job_count", 0)
-#                 except requests.RequestException:
-#                     job_count = 0  # fallback
-
-#                 company_list.append({
-#                     "name": c.business_name,
-#                     "job_count": job_count
-#                 })
-
-#             return Response({
-#                 "success": True,
-#                 "institutes": institute_list,
-#                 "companies": company_list
-#             }, status=status.HTTP_200_OK)
-
-#         except Exception as e:
-#             return Response({
-#                 "success": False,
-#                 "message": "Failed to fetch business summary.",
-#                 "error": str(e)
-#             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
