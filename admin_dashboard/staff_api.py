@@ -234,7 +234,8 @@ class BusinessSearchAPIView(APIView):
     """
     API to search businesses by business_id or business_name (partial match).
     """
-
+    authentication_classes = [UserTokenAuthentication]
+    permission_classes = [IsAuthenticated]
     @swagger_auto_schema(
         operation_summary="Search Businesses",
         operation_description="Search businesses by partial business_id or business_name as a query parameter.",
@@ -285,7 +286,6 @@ class BusinessSearchAPIView(APIView):
         businesses = Business.objects.filter(
             Q(business_id__icontains=query) | Q(business_name__icontains=query)
         )
-
         serializer = serializers.BusinessShortSerializer(businesses, many=True)
         return Response({
             "success": True,
