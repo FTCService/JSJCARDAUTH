@@ -88,9 +88,15 @@ class AddMemberByInstituteApi(APIView):
         tags=["Institute"]
     )
     def get(self, request):
-        """Retrieve all  member."""
-   
+        """Retrieve all referred members and return total count."""
+
         referal_id = request.user.business_id
         staff_users = Member.objects.filter(MbrReferalId=referal_id)
+        total_students = staff_users.count()
         serializer = serializers.JobMitraMemberListSerializer(staff_users, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response({
+            "success": True,
+            "total_students": total_students,
+            "members": serializer.data
+        }, status=status.HTTP_200_OK)
