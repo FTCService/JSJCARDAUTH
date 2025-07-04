@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to JSJCard</title>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px;">
+    <div style="background-color: white; max-width: 600px; margin: auto; padding: 30px; border-radius: 8px;">
+        <h2 style="color: #4CAF50;">Welcome, {{ full_name }}!</h2>
+        <p>We're excited to welcome you to <strong>JSJCard</strong>.</p>
+
+        <p><strong>Your Card Number:</strong> {{ mbrcardno }}</p>
+        <p><strong>Email:</strong> {{ email }}</p>
+        <p><strong>Mobile Number:</strong> {{ mobile_number }}</p>
+        <p><strong>Registered On:</strong> {{ created_at }}</p>
+
+        <h3>Card Purposes:</h3>
+        <ul>
+            {% for purpose in card_purposes %}
+                <li>
+                    <strong>{{ purpose.purpose }}</strong>
+                    {% if purpose.features %}
+                        <ul>
+                            {% for feature in purpose.features %}
+                                <li>{{ feature }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+
+        <p style="margin-top: 30px;">If you have any questions, feel free to reach out to our support team.</p>
+
+        <p style="color: #999;">Thank you for joining JSJCard!</p>
+    </div>
+</body>
+</html>

@@ -16,7 +16,7 @@ import secrets
 from member.models import JobProfile
 from django.utils import timezone
 import random
-
+from app_common.email import send_template_email
 import csv
 import io
 
@@ -171,8 +171,13 @@ class MemberSignupApi(APIView):
                     "email": email  
                 }
             )
-
-            send_otp_to_mobile({"mobile_number": mobile_number, "otp": otp})
+            send_template_email(
+            subject="Your OTP Code",
+            template_name="email_template/otp_validation_mail.html",
+            context={'otp_code': otp},
+            recipient_list=[email]
+            )
+            # send_otp_to_mobile({"mobile_number": mobile_number, "otp": otp})
             return Response({"message": "OTP sent. Verify to complete registration.", "otp": otp}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -267,7 +272,19 @@ class MemberVerifyOtpApi(APIView):
                 "token": token,  # ✅ Return token to client
                 "job_profile_created": True
             }
-
+            send_template_email(
+                subject="Welcome to JSJCard!",
+                template_name="email_template/member_welcome.html",
+                context={
+                    'full_name': user.full_name,
+                    'mbrcardno': user.mbrcardno,
+                    'email': user.email,
+                    'mobile_number': user.mobile_number,
+                    'card_purposes': final_purpose_list,
+                    'created_at': user.MbrCreatedAt.strftime('%Y-%m-%d %H:%M:%S'),
+                },
+                recipient_list=[user.email]
+            )
             return Response(response_data, status=status.HTTP_200_OK)
 
         return Response({"success": False, "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
