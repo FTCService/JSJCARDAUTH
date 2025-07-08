@@ -15,7 +15,7 @@ from .authentication import BusinessTokenAuthentication
 from django.contrib.auth.hashers import check_password, make_password
 from app_common.models import Business, BusinessKyc
 import csv, io
-
+from app_common.email import send_template_email
 
 
 class BulkBusinessUploadView(APIView):
@@ -174,12 +174,17 @@ class BusinessSignupApi(APIView):
                 }
             )
 
-            # Step 5: Send OTP to mobile
+            # # Step 5: Send OTP to mobile
             send_otp_to_mobile({
                 "mobile_number": mobile_number,
                 "otp": otp
             })
-
+            send_template_email(
+            subject="Your OTP Code",
+            template_name="email_template/otp_validation_mail.html",
+            context={'otp_code': otp},
+            recipient_list=[email]
+            )
             # Step 6: Respond success
             return Response(
                 {"message": "OTP sent. Verify to complete signup.", "otp": otp},  # you can remove `otp` in prod

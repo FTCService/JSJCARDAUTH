@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import authenticate, logout, login
 from drf_yasg.utils import swagger_auto_schema
 from django.contrib.auth.hashers import check_password, make_password
-from helpers.utils import send_otp_to_mobile
+from helpers.utils import send_otp_to_mobile, send_fast2sms
 from app_common.authentication import MemberAuthBackend, MemberTokenAuthentication
 from drf_yasg import openapi
 from app_common.models import User, Member,MemberAuthToken
@@ -16,7 +16,7 @@ import secrets
 from member.models import JobProfile
 from django.utils import timezone
 import random
-
+from app_common.email import send_template_email
 import csv
 import io
 
@@ -39,17 +39,17 @@ class BulkMemberUploadView(APIView):
                 # Skip if mobile number or card number already exists
                 if Member.objects.filter(mobile_number=row["mobile_number"]).exists() or Member.objects.filter(mbrcardno=row["mbrcardno"]).exists():
                     continue
-                # raw_pin = row.get("pin")
-                # if raw_pin.startswith("pbkdf2_"):
-                #     pin = raw_pin  # Already hashed
-                # else:
-                #     pin = make_password(raw_pin)
+                raw_pin = row.get("pin")
+                if raw_pin.startswith("pbkdf2_"):
+                    pin = raw_pin  # Already hashed
+                else:
+                    pin = make_password(raw_pin)
                 member = Member(
                     id=row.get("id"),
                     full_name=row.get("full_name"),
                     email=row.get("email"),
                     mobile_number=row.get("mobile_number"),
-                    pin=row.get("pin"),
+                    pin=pin,
                     first_name=row.get("first_name"),
                     last_name=row.get("last_name"),
                     MbrCountryCode=row.get("MbrCountryCode", "+91"),
@@ -63,7 +63,22 @@ class BulkMemberUploadView(APIView):
                 )
                 member.save()
                 created_members.append(member.mobile_number)
+                # Prepare context for welcome email
+                context = {
+                    "full_name": member.full_name,
+                    "mbrcardno": member.mbrcardno,
+                    "otp_code": member.otp,
+                    "mobile_number": member.mobile_number,
+                    "email": member.email,
+                }
 
+                # Send welcome email
+                send_template_email(
+                    subject="Welcome to JSJ Card - Your Membership Details",
+                    template_name="email_template/send_welcome_new_member.html",
+                    context=context,
+                    recipient_list=[member.email]
+                )
             except Exception as e:
                 return Response({"error": f"Failed to process row: {row}", "details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -171,7 +186,14 @@ class MemberSignupApi(APIView):
                     "email": email  
                 }
             )
-
+            send_template_email(
+            subject="Your OTP Code",
+            template_name="email_template/otp_validation_mail.html",
+            context={'otp_code': otp},
+            recipient_list=[email]
+            )
+            # Send SMS with OTP
+            # send_fast2sms(mobile_number, otp)
             send_otp_to_mobile({"mobile_number": mobile_number, "otp": otp})
             return Response({"message": "OTP sent. Verify to complete registration.", "otp": otp}, status=status.HTTP_200_OK)
 
@@ -267,7 +289,19 @@ class MemberVerifyOtpApi(APIView):
                 "token": token,  # ✅ Return token to client
                 "job_profile_created": True
             }
-
+            send_template_email(
+                subject="Welcome to JSJCard!",
+                template_name="email_template/member_welcome.html",
+                context={
+                    'full_name': user.full_name,
+                    'mbrcardno': user.mbrcardno,
+                    'email': user.email,
+                    'mobile_number': user.mobile_number,
+                    'card_purposes': final_purpose_list,
+                    'created_at': user.MbrCreatedAt.strftime('%Y-%m-%d %H:%M:%S'),
+                },
+                recipient_list=[user.email]
+            )
             return Response(response_data, status=status.HTTP_200_OK)
 
         return Response({"success": False, "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
