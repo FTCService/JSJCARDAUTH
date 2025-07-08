@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to JSJ Card</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #f4f4f7;
+            font-family: Arial, sans-serif;
+            color: #333333;
+        }
+
+        .email-wrapper {
+            max-width: 600px;
+            margin: auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+        }
+
+        .email-header {
+            background: #1e90ff;
+            color: #ffffff;
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        .email-header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .email-body {
+            padding: 30px 20px;
+        }
+
+        .email-body h2 {
+            color: #1e90ff;
+            margin-top: 0;
+        }
+
+        .details-table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        .details-table td {
+            padding: 10px;
+            border-bottom: 1px solid #eeeeee;
+        }
+
+        .details-table td:first-child {
+            font-weight: bold;
+            width: 45%;
+        }
+
+        .cta-button {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 12px 24px;
+            background-color: #1e90ff;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .email-footer {
+            text-align: center;
+            font-size: 13px;
+            color: #888888;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <div class="email-header">
+            <h1>Welcome to JSJ Card!</h1>
+        </div>
+        <div class="email-body">
+            <h2>Hello {{ full_name }},</h2>
+            <p>We are excited to welcome you to the JSJ Card platform. Your member account has been successfully created. Below are your details:</p>
+
+            <table class="details-table">
+                <tr>
+                    <td>Member Card No:</td>
+                    <td>{{ mbrcardno }}</td>
+                </tr>
+                <tr>
+                    <td>Full Name:</td>
+                    <td>{{ full_name }}</td>
+                </tr>
+                <tr>
+                    <td>Mobile Number:</td>
+                    <td>{{ mobile_number }}</td>
+                </tr>
+                <tr>
+                    <td>Email:</td>
+                    <td>{{ email }}</td>
+                </tr>
+                {% if otp_code %}
+                <tr>
+                    <td>Temporary OTP:</td>
+                    <td>{{ otp_code }}</td>
+                </tr>
+                {% endif %}
+            </table>
+
+            <p>If you haven't logged in yet, click the button below to access your dashboard:</p>
+            <a href="https://www.jsjcard.com/member/login" class="cta-button">Go to Dashboard</a>
+        </div>
+        <div class="email-footer">
+            &copy; {{ now|date:"Y" }} JSJ Card. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

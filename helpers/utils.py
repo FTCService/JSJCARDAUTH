@@ -5,6 +5,39 @@ import urllib.parse
 import pytz
 from datetime import datetime
 from django.conf import settings
+import threading
+
+import requests
+import threading
+
+def send_fast2sms(mobile_number, otp_code):
+    def send_sms():
+        try:
+            url = "https://www.fast2sms.com/dev/bulkV2"
+            payload = {
+                "authorization": "YxdcZ4HlsCGI9fX7NOMJRrgqQz0bS2aj6Dm5pivwVEu8kLU3otKYCqlAXreJG8dLkth46cvpyTuaN10Q",
+                "route": "dlt",
+                "sender_id": "JSJCRD",
+                "message": "188963",
+                "variables_values": f"{otp_code}|",
+                "flash": "0",
+                "numbers": mobile_number  # ✅ No comma at end
+            }
+            headers = {
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+
+            response = requests.post(url, data=payload, headers=headers)
+            print("📨 SMS API Response:", response.status_code, response.text)
+
+        except Exception as e:
+            print(f"❌ Exception while sending SMS: {e}")
+
+    threading.Thread(target=send_sms).start()
+
+
+
+
 
 def send_otp_to_mobile(payload):
   

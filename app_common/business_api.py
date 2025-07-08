@@ -175,10 +175,10 @@ class BusinessSignupApi(APIView):
             )
 
             # # Step 5: Send OTP to mobile
-            # send_otp_to_mobile({
-            #     "mobile_number": mobile_number,
-            #     "otp": otp
-            # })
+            send_otp_to_mobile({
+                "mobile_number": mobile_number,
+                "otp": otp
+            })
             send_template_email(
             subject="Your OTP Code",
             template_name="email_template/otp_validation_mail.html",

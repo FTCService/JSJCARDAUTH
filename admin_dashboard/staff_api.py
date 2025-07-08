@@ -11,7 +11,7 @@ from app_common.authentication import UserTokenAuthentication
 from django.contrib.auth import logout
 from app_common.serializers import GovernmentUserSerializer
 from django.db.models import Q
-
+from app_common.email import send_template_email 
 
 
 class UserLogoutApi(APIView):
@@ -188,7 +188,20 @@ class InstituteSignupApi(APIView):
                 is_institute=True
             )
 
-        
+            # Step 5: Send welcome email
+            context = {
+                "business_name": business_name,
+                "email": email,
+                "pin": pin,
+                "login_url": "https://jsjcard.com/login"  # Replace with your actual login URL
+            }
+
+            send_template_email(
+                subject="🎉 Welcome to JSJCard Institute Portal",
+                template_name="email_template/welcome_istitute.html",
+                context=context,
+                recipient_list=[email]
+            )
             # Step 6: Respond success
             return Response(
                 {"message": "institute add successfuly", },  
