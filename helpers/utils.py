@@ -15,7 +15,7 @@ def send_fast2sms(mobile_number, otp_code):
         try:
             url = "https://www.fast2sms.com/dev/bulkV2"
             payload = {
-                "authorization": "YxdcZ4HlsCGI9fX7NOMJRrgqQz0bS2aj6Dm5pivwVEu8kLU3otKYCqlAXreJG8dLkth46cvpyTuaN10Q",
+                "authorization": "Ba7thi9AQFlaAo80KrODiv5bgUT9BD97vRXqlSfL7atLqC3jXXF2ysL0V2Ya",
                 "route": "dlt",
                 "sender_id": "JSJCRD",
                 "message": "188963",
