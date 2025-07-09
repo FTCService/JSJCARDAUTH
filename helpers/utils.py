@@ -15,19 +15,19 @@ def send_fast2sms(mobile_number, otp_code):
         try:
             url = "https://www.fast2sms.com/dev/bulkV2"
             payload = {
-                "authorization": "YxdcZ4HlsCGI9fX7NOMJRrgqQz0bS2aj6Dm5pivwVEu8kLU3otKYCqlAXreJG8dLkth46cvpyTuaN10Q",
                 "route": "dlt",
-                "sender_id": "JSJCRD",
-                "message": "188963",
-                "variables_values": f"{otp_code}|",
-                "flash": "0",
-                "numbers": mobile_number  # ✅ No comma at end
+                "sender_id": "JSJCRD",  # Your approved sender ID
+                "message": "188963",    # Template ID created in Fast2SMS
+                "variables_values": f"{otp_code}|",  # Ensure this matches your template variables
+                "flash": 0,
+                "numbers": mobile_number
             }
             headers = {
-                "Content-Type": "application/x-www-form-urlencoded"
+                "authorization": "Ba7thi9AQFlaAo80KrODiv5bgUT9BD97vRXqlSfL7atLqC3jXXF2ysL0V2Ya",
+                "Content-Type": "application/json"
             }
 
-            response = requests.post(url, data=payload, headers=headers)
+            response = requests.post(url, json=payload, headers=headers)
             print("📨 SMS API Response:", response.status_code, response.text)
 
         except Exception as e:

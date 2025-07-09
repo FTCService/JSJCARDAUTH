@@ -193,8 +193,8 @@ class MemberSignupApi(APIView):
             recipient_list=[email]
             )
             # Send SMS with OTP
-            # send_fast2sms(mobile_number, otp)
-            send_otp_to_mobile({"mobile_number": mobile_number, "otp": otp})
+            send_fast2sms(mobile_number, otp)
+            # send_otp_to_mobile({"mobile_number": mobile_number, "otp": otp})
             return Response({"message": "OTP sent. Verify to complete registration.", "otp": otp}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
