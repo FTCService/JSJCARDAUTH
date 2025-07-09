@@ -90,10 +90,6 @@ class MemberSignupSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("PIN must be exactly 4 digits and contain only numbers.")
         return value
 
-    def validate_email(self, value):
-        if value and TempMemberUser.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Email is already in use.")
-        return value
     
     def create(self, validated_data):
         # Store 'pin' as 'password' since TempUser uses 'password' instead of 'pin'

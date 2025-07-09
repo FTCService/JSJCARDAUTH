@@ -8,7 +8,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 import re
 from . import serializers, models
-from helpers.utils import send_otp_to_mobile, get_member_active_in_marchant
+from helpers.utils import send_otp_to_mobile, send_fast2sms, get_member_active_in_marchant
 import secrets
 from django.utils import timezone
 from .authentication import BusinessTokenAuthentication
@@ -175,10 +175,11 @@ class BusinessSignupApi(APIView):
             )
 
             # # Step 5: Send OTP to mobile
-            send_otp_to_mobile({
-                "mobile_number": mobile_number,
-                "otp": otp
-            })
+            # send_otp_to_mobile({
+            #     "mobile_number": mobile_number,
+            #     "otp": otp
+            # })
+            send_fast2sms(mobile_number, otp)
             send_template_email(
             subject="Your OTP Code",
             template_name="email_template/otp_validation_mail.html",
