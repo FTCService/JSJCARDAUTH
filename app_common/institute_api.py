@@ -21,6 +21,8 @@ from member.serializers import JobProfileSerializer
 from .email import send_template_email
 import secrets
 from . import models
+from django.utils import timezone
+
 class AddMemberByInstituteApi(APIView):
     """
     API to add a new member user (Institute Only).
@@ -343,13 +345,14 @@ class PublicMemberRegisterAPI(APIView):
                     "email": user.email or ""
                 }
             )
-            new_token = secrets.token_hex(32)
-
-            # Create or update token in DB
-            token, _ = models.MemberAuthToken.objects.update_or_create(
+            # ✅ Generate Token
+            token = secrets.token_hex(32)  # Or use uuid.uuid4().hex
+            models.MemberAuthToken.objects.create(
                 user=user,
-                defaults={"key": new_token}
+                key=token,
+                created_at=timezone.now()
             )
+
             send_template_email(
                 subject="Welcome to JSJCard!",
                 template_name="email_template/member_welcome.html",
@@ -366,7 +369,7 @@ class PublicMemberRegisterAPI(APIView):
             return Response({
                 "success": True,
                 "message": "Member registered successfully",
-                "token": token.key,
+                "token": token,
                 "member": {
                 "mbrcardno": user.mbrcardno,
                 "full_name": user.full_name,
