@@ -72,7 +72,7 @@ urlpatterns = [
     path("institute/add/member/", institute_api.AddMemberByInstituteApi.as_view(), name="institute-add-member"),
     path("member/jobprofile/<str:card_number>/", institute_api.FieldsFormattedforInstitute.as_view(), name="jobprofile-member"),
     
-   
+    path("public/member/register/", institute_api.PublicMemberRegisterAPI.as_view(), name="public-member-register"),
    
 
 ]
