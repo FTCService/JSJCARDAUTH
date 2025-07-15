@@ -17,7 +17,10 @@ from django.contrib.auth.hashers import make_password
 from member.models import JobProfile
 from admin_dashboard.models import CardPurpose, FieldCategory
 from django.shortcuts import get_object_or_404
-
+from member.serializers import JobProfileSerializer
+from .email import send_template_email
+import secrets
+from . import models
 class AddMemberByInstituteApi(APIView):
     """
     API to add a new member user (Institute Only).
@@ -228,3 +231,150 @@ class FieldsFormattedforInstitute(APIView):
 
       
         return Response(response_data, status=status.HTTP_200_OK)
+    
+    @swagger_auto_schema(
+        request_body=JobProfileSerializer,
+        tags=["institute"]
+    )
+    def post(self, request, card_number):
+        """Create or update the job profile for the logged-in user"""
+        try:
+            member = Member.objects.get(mbrcardno=card_number)
+        except Member.DoesNotExist:
+            return Response({"error": "Invalid member."}, status=status.HTTP_400_BAD_REQUEST)
+
+        data = request.data.copy()
+        data["MbrCardNo"] = member.mbrcardno
+
+        try:
+            job_profile = JobProfile.objects.get(MbrCardNo=member)
+            serializer = JobProfileSerializer(job_profile, data=data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"message": "Job Profile Updated Successfully", "data": serializer.data}, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except JobProfile.DoesNotExist:
+            serializer = JobProfileSerializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"message": "Job Profile Created Successfully", "data": serializer.data}, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+
+class PublicMemberRegisterAPI(APIView):
+    """
+    Open API to register a Member using referral ID, accessible via public links.
+    """
+
+    @swagger_auto_schema(request_body=serializers.JobMitraAddMemberSerializer, tags=["Public Registration"])
+    def post(self, request):
+        refer_id = request.query_params.get("referId")  # from URL like ?referId=BUS123
+        data = request.data.copy()
+
+        if not refer_id:
+            return Response({"error": "Missing referral ID"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Pre-check for duplicate mobile/email
+        if Member.objects.filter(email=data.get("email")).exists():
+            return Response({"error": "Member with this email already exists."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if Member.objects.filter(mobile_number=data.get("mobile_number")).exists():
+            return Response({"error": "Member with this mobile number already exists."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Now validate the rest
+        serializer = serializers.JobMitraAddMemberSerializer(data=data)
+        if serializer.is_valid():
+            full_name = serializer.validated_data["full_name"]
+            email = serializer.validated_data["email"]
+            pin = serializer.validated_data["pin"]
+            mobile_number = serializer.validated_data["mobile_number"]
+            state = serializer.validated_data.get("state")
+            district = serializer.validated_data.get("district")
+            block = serializer.validated_data.get("block")
+            village = serializer.validated_data.get("village")
+            pincode = serializer.validated_data.get("pincode")
+            
+            # Build meta_data dict
+            address = {
+                "state": state,
+                "district": district,
+                "block": block,
+                "village": village,
+                "pincode": pincode
+            }
+            # Create staff user
+            user = Member.objects.create(
+                email=email,
+                pin=make_password(pin),
+                full_name=full_name,
+                mobile_number=mobile_number,
+                MbrReferalId=refer_id,
+                address=address
+            )
+
+                # ✅ Handle multiple purpose entries
+            purposes_data = request.data.get("card_purposes", [
+                {"purpose": "consumer", "features": ["Reward"]}
+            ])
+
+            final_purpose_list = []
+
+            for entry in purposes_data:
+                purpose_name = entry.get("purpose", "consumer")
+                features = entry.get("features", [])
+
+                purpose_obj = CardPurpose.objects.filter(purpose_name=purpose_name).first()
+                if purpose_obj:
+                    final_purpose_list.append({
+                        "id": purpose_obj.id,
+                        "purpose": purpose_obj.purpose_name,
+                        "features": features or purpose_obj.features  # fallback to default
+                    })
+
+            user.card_purposes = final_purpose_list
+            user.save()
+            
+            JobProfile.objects.create(
+                MbrCardNo=user,
+                BasicInformation={
+                    "full_name": user.full_name,
+                    "mobile_number": user.mobile_number,
+                    "email": user.email or ""
+                }
+            )
+            new_token = secrets.token_hex(32)
+
+            # Create or update token in DB
+            token, _ = models.MemberAuthToken.objects.update_or_create(
+                user=user,
+                defaults={"key": new_token}
+            )
+            send_template_email(
+                subject="Welcome to JSJCard!",
+                template_name="email_template/member_welcome.html",
+                context={
+                    'full_name': user.full_name,
+                    'mbrcardno': user.mbrcardno,
+                    'email': user.email,
+                    'mobile_number': user.mobile_number,
+                    'card_purposes': final_purpose_list,
+                    'created_at': user.MbrCreatedAt.strftime('%Y-%m-%d %H:%M:%S'),
+                },
+                recipient_list=[user.email]
+            )
+            return Response({
+                "success": True,
+                "message": "Member registered successfully",
+                "token": token.key,
+                "member": {
+                "mbrcardno": user.mbrcardno,
+                "full_name": user.full_name,
+                "email": user.email,
+                "mobile_number": user.mobile_number,
+                "address": user.address
+            }
+            }, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
