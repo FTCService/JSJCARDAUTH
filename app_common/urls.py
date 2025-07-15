@@ -6,7 +6,7 @@ app_name = "app_common"
 
 urlpatterns = [
     
- 
+    path("upload-jobprofile/", views.BulkProfileUploadView.as_view(), name="upload-jobprofile"),
     
     path("admin/add-staff/", views.AddStaffApi.as_view(), name="add-staff"),
     path("upload-members/", views.BulkMemberUploadView.as_view(), name="upload-members"),
@@ -70,7 +70,8 @@ urlpatterns = [
 
     
     path("institute/add/member/", institute_api.AddMemberByInstituteApi.as_view(), name="institute-add-member"),
-   
+    path("member/jobprofile/<str:card_number>/", institute_api.FieldsFormattedforInstitute.as_view(), name="jobprofile-member"),
+    
    
    
 

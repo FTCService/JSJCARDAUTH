@@ -9,7 +9,7 @@ from django.core.mail import send_mail
 from app_common.models import Business, User, Member
 from member.models import JobProfile
 from .serializers import  JobProfileSerializer
-from app_common.authentication import MemberTokenAuthentication
+from app_common.authentication import MemberTokenAuthentication, BusinessTokenAuthentication
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
