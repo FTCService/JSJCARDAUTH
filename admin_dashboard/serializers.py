@@ -245,7 +245,7 @@ class JobMitraAddMemberSerializer(serializers.ModelSerializer):
     pincode = serializers.CharField(required=False)
     class Meta:
         model = Member
-        fields = ["id", "full_name", "email", "pin", "mobile_number",'state', 'district', 'block', 'village', 'pincode']
+        fields = ["id","MbrReferalId", "full_name", "email", "pin", "mobile_number",'state', 'district', 'block', 'village', 'pincode']
         extra_kwargs = {
             "pin": {"write_only": True},
             "id": {"read_only": True},

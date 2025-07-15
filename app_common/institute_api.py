@@ -270,12 +270,11 @@ class PublicMemberRegisterAPI(APIView):
 
     @swagger_auto_schema(request_body=serializers.JobMitraAddMemberSerializer, tags=["Public Registration"])
     def post(self, request):
-        refer_id = request.query_params.get("referId")  # from URL like ?referId=BUS123
+        # refer_id = request.query_params.get("referId")  # from URL like ?referId=BUS123
+        
         data = request.data.copy()
 
-        if not refer_id:
-            return Response({"error": "Missing referral ID"}, status=status.HTTP_400_BAD_REQUEST)
-
+       
         # Pre-check for duplicate mobile/email
         if Member.objects.filter(email=data.get("email")).exists():
             return Response({"error": "Member with this email already exists."}, status=status.HTTP_400_BAD_REQUEST)
@@ -295,7 +294,7 @@ class PublicMemberRegisterAPI(APIView):
             block = serializer.validated_data.get("block")
             village = serializer.validated_data.get("village")
             pincode = serializer.validated_data.get("pincode")
-            
+            refer_id = serializer.validated_data["MbrReferalId"]
             # Build meta_data dict
             address = {
                 "state": state,
