@@ -35,6 +35,7 @@ class JobProfileField(models.Model):
         ("select", "Select"),
         ("checkbox", "Checkbox"),
         ("url", "URL"),
+        ("textarea", "Textarea"),
     ]
     category = models.ForeignKey(FieldCategory, on_delete=models.CASCADE, related_name="fields", null=True)
     label = models.CharField(max_length=100)
