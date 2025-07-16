@@ -39,6 +39,7 @@ class JobProfileAPI(APIView):
             response_data["full_name"] = request.user.full_name
             response_data["MbrCardNo"] = request.user.mbrcardno
             response_data["mobile_no"] = request.user.mobile_number
+            response_data["email"] = request.user.email
 
             return Response(response_data, status=status.HTTP_200_OK)
 

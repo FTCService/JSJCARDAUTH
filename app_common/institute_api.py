@@ -150,90 +150,32 @@ class FieldsFormattedforInstitute(APIView):
     """API to get all categories with their fields formatted as key-value pairs."""
     authentication_classes = [BusinessTokenAuthentication]
     permission_classes = [IsAuthenticated]
-    # Define the response schema for Swagger
     @swagger_auto_schema(
-        responses={
-            200: openapi.Response(
-                description="List of all categories with their fields formatted as key-value pairs.",
-                examples={
-                    "application/json": {
-                        "BasicInformation": {
-                            "first_name": {
-                                "label": "First Name",
-                                "field_id": "first_name",
-                                "field_type": "text",
-                                "is_required": True,
-                                "placeholder": "Enter your first name",
-                                "value": ""
-                            },
-                            "last_name": {
-                                "label": "Last Name",
-                                "field_id": "last_name",
-                                "field_type": "text",
-                                "is_required": False,
-                                "placeholder": "Enter your last name",
-                                "value": ""
-                            }
-                        },
-                        "workexperience": {},
-                        "skills": {
-                            "python": {
-                                "label": "Python",
-                                "field_id": "python",
-                                "field_type": "text",
-                                "is_required": True,
-                                "placeholder": "Enter your Python skills",
-                                "value": ""
-                            }
-                        }
-                    }
-                },
-            )
-        },
-        tags=["institute"]
+        responses={200: JobProfileSerializer()},
+        tags=["Job Profile Management"]
     )
     def get(self, request, card_number):
-       
-        job_profile = get_object_or_404(JobProfile, MbrCardNo=card_number)
+        """Retrieve the logged-in user's job profile"""
+        try:
+           
+           
+            job_profile = JobProfile.objects.get(MbrCardNo=card_number)
+           
+            serializer = JobProfileSerializer(job_profile)
+            response_data = serializer.data
+            # response_data["full_name"] = request.user.full_name
+            # response_data["MbrCardNo"] = request.user.mbrcardno
+            # response_data["mobile_no"] = request.user.mobile_number
+            # response_data["email"] = request.user.email
 
-        categories = FieldCategory.objects.prefetch_related("fields").all()
-        response_data = {}
+            return Response(response_data, status=status.HTTP_200_OK)
 
-        for category in categories:
-            category_fields = {}
+        except Member.DoesNotExist:
+            return Response({"error": "Member not found."}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Normalize key from category name (e.g., "Basic Information" -> "BasicInformation")
-            category_key = category.name.replace(" ", "")
-            job_profile_data = getattr(job_profile, category_key, {})
+        except JobProfile.DoesNotExist:
+            return Response({"error": "Job Profile Not Found"}, status=status.HTTP_404_NOT_FOUND)
 
-            for field in category.fields.all():
-                # Get raw field value from job profile data
-                field_value = job_profile_data.get(field.field_id)
-
-                # Extract only the real value if field_value is a dict
-                actual_value = (
-                    field_value.get("value")
-                    if isinstance(field_value, dict) and "value" in field_value
-                    else field_value
-                )
-
-                field_data = {
-                    "label": field.label,
-                    "field_id": field.field_id,
-                    "field_type": field.field_type,
-                    "is_required": field.is_required,
-                    "placeholder": field.placeholder,
-                    "option": field.option,
-                    "value": actual_value if actual_value is not None else ([] if field.field_type == "checkbox" else None),
-                }
-
-                category_fields[field.field_id] = field_data
-
-            response_data[category.name] = category_fields
-
-      
-        return Response(response_data, status=status.HTTP_200_OK)
-    
     @swagger_auto_schema(
         request_body=JobProfileSerializer,
         tags=["institute"]
