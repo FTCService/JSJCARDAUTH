@@ -115,7 +115,7 @@ class AddMemberByInstituteApi(APIView):
                     "email": user.email or ""
                 }
             )
-            return Response({"message": "member added successfully","member": {
+            return Response({"success": True,"message": "member added successfully","member": {
                 "mbrcardno": user.mbrcardno,
                 "full_name": user.full_name,
                 "email": user.email,
