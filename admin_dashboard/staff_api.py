@@ -193,7 +193,7 @@ class InstituteSignupApi(APIView):
                 "business_name": business_name,
                 "email": email,
                 "pin": pin,
-                "login_url": "https://jsjcard.com/login"  # Replace with your actual login URL
+                "login_url": "https://www.jsjcard.com/institute/login"  # Replace with your actual login URL
             }
 
             send_template_email(

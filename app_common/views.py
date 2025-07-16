@@ -161,6 +161,7 @@ class BulkMemberUploadView(APIView):
         return Response({"message": f"{len(created_members)} members uploaded successfully", "members": created_members}, status=status.HTTP_201_CREATED)
     
 
+
 # ================ admin add staff ================ ##.
 class AddStaffApi(APIView):
     """
@@ -208,6 +209,7 @@ class AddStaffApi(APIView):
         staff_users = User.objects.filter(is_staff=True)
         serializer = serializers.StaffUserSerializer(staff_users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
     
     
     
@@ -425,7 +427,7 @@ class MemberLoginApi(APIView):
                 user.backend = 'app_common.authentication.MemberAuthBackend'  # Replace with actual path
 
                 # Log the result of password check (useful during development/debug)
-                print("✔ check_password result:", check_password(pin, user.pin))
+                # print("✔ check_password result:", check_password(pin, user.pin))
 
                 # Generate a secure token (32 bytes hex) to be used as access token
                 new_token = secrets.token_hex(32)

@@ -1,14 +1,12 @@
 import random
 import requests
+import threading
 from django.core.cache import cache
 import urllib.parse
 import pytz
 from datetime import datetime
 from django.conf import settings
-import threading
 
-import requests
-import threading
 
 def send_fast2sms(mobile_number, otp_code):
     def send_sms():
