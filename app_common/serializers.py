@@ -594,7 +594,7 @@ class BusinessRegistrationSerializer(serializers.ModelSerializer):
         fields = [
             'business_name', 'business_type', 'business_is_active',
             'business_address', 'business_pincode', 'business_created_by', 'business_created_at',
-            'business_updated_by', 'business_updated_at', 'business_notes', 'email', 'contact_with_country'
+            'business_updated_by', 'business_updated_at', 'business_notes', 'email', 'contact_with_country','business_profile_image'
         ]
         read_only_fields = ['mobile_number', 'pin', 'contact_with_country', 'business_created_at', 'business_updated_at']
 

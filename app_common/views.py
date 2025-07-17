@@ -188,13 +188,28 @@ class AddStaffApi(APIView):
                 return Response({"error": "User with this email already exists"}, status=status.HTTP_400_BAD_REQUEST)
 
             # Create staff user
-            user = User.objects.create_user(
+            user = User.objects.create(
                 email=email,
                 password=password,
                 full_name=full_name,
                 employee_id=employee_id,
                 mobile_number=mobile_number,
                 is_staff=True  
+            )
+            # Send welcome email
+            context = {
+                "full_name": full_name,
+                "email": email,
+                "employee_id": employee_id,
+                "mobile_number": mobile_number,
+                "login_url": "https://www.jsjcard.com/admin/login"
+            }
+
+            send_template_email(
+                subject="🎉 Welcome to JSJCard Admin Portal",
+                template_name="email_template/welcome_staff.html",
+                context=context,
+                recipient_list=[email]
             )
 
             return Response({"message": "Staff user added successfully"}, status=status.HTTP_201_CREATED)

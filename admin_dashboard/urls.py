@@ -16,7 +16,7 @@ urlpatterns = [
   
   path("staff/dashboard/", staff_api.StaffDashboard.as_view(), name="staff-dashboard"),
   path("staff/add-institute/", staff_api.InstituteSignupApi.as_view(), name="staff-add-institute"),
-  
+  path('institute/update/<str:business_id>/', staff_api.InstituteUpdateApi.as_view(), name='institute-update'),
 
   
   path("card-purpose/", views.CardPurposeListApi.as_view(), name="card-purpose-list"),
