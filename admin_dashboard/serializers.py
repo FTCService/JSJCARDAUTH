@@ -166,7 +166,7 @@ class InstituteSignupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Business
-        fields = ["mobile_number", "business_name", "pin", "email"]
+        fields = ["mobile_number", "business_name", "pin", "email", "business_profile_image"]
 
     def validate_mobile_number(self, value):
         """
@@ -195,9 +195,27 @@ class InstituteListSerializer(serializers.ModelSerializer):
             "mobile_number",
             "business_name",
             "business_type",
+            "business_profile_image",
         ]
         read_only_fields = fields     
     
+    
+class InstituteUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Business
+        fields = [
+            'business_name',
+            'email',
+            'business_profile_image',
+            'business_address',
+            'business_type'
+        ]
+        extra_kwargs = {
+            'email': {'required': False},
+            'business_name': {'required': False},
+            'business_profile_image': {'required': False},
+        }
+
 
 
 class CategorySerializer(serializers.ModelSerializer):

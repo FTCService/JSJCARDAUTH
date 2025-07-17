@@ -222,6 +222,7 @@ class Business(AbstractBaseUser, PermissionsMixin):
     business_updated_by = models.CharField(max_length=255, null=True, blank=True)  
     business_updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)  
     business_notes = models.TextField(null=True, blank=True)  
+    business_profile_image = models.TextField(null=True, blank=True)
     
     is_business = models.BooleanField(default=True)     # Regular business
     is_institute = models.BooleanField(default=False)   # If true, user is an institute

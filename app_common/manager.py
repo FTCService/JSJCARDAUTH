@@ -47,11 +47,11 @@ class MemberManager(BaseUserManager):
     
     
 class BusinessManager(BaseUserManager):
-    def create_user(self, mobile_number, pin, business_name, email, is_institute=False):
+    def create_user(self, mobile_number, pin, business_name, email, is_institute=False, business_profile_image=None):
         if not mobile_number:
             raise ValueError("mobile number is required")
 
-        user = self.model(mobile_number=mobile_number, business_name=business_name, email=self.normalize_email(email),is_institute=is_institute)
+        user = self.model(mobile_number=mobile_number, business_name=business_name, email=self.normalize_email(email),is_institute=is_institute, business_profile_image=business_profile_image)
         user.set_pin(pin)  # ✅ Hash PIN
         user.save(using=self._db)
         return user

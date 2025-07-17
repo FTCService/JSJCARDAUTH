@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to JSJCard Admin Portal</title>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #f7f7f7; padding: 20px;">
+    <div style="max-width: 600px; margin: auto; background: white; border-radius: 8px; padding: 30px;">
+        <h2 style="color: #333333;">🎉 Welcome {{ full_name }}!</h2>
+        <p>We're excited to have you join the JSJCard Admin Team.</p>
+
+        <h4>Your Details:</h4>
+        <ul>
+            <li><strong>Email:</strong> {{ email }}</li>
+            <li><strong>Mobile Number:</strong> {{ mobile_number }}</li>
+            <li><strong>Employee ID:</strong> {{ employee_id }}</li>
+        </ul>
+
+        <p>You can login to your admin dashboard here:</p>
+        <a href="{{ login_url }}" style="background: #007bff; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none;">
+            Go to Admin Portal
+        </a>
+
+        <p style="margin-top: 30px;">If you have any issues, please reach out to our support team.</p>
+
+        <p style="color: #888888;">— JSJCard Team</p>
+    </div>
+</body>
+</html>

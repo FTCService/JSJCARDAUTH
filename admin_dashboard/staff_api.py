@@ -162,7 +162,7 @@ class InstituteSignupApi(APIView):
             business_name = serializer.validated_data["business_name"]
             pin = serializer.validated_data["pin"]
             email = serializer.validated_data["email"]
-
+            business_profile_image = serializer.validated_data["business_profile_image"]
             # # Step 2: Generate OTP (6-digit)
             # otp = random.randint(100000, 999999)
 
@@ -179,17 +179,19 @@ class InstituteSignupApi(APIView):
                     status=status.HTTP_200_OK
                 )
 
-            # Step 4: Save or update TempUser entry
+            # Step 4: Save or update Business entry
             user = Business.objects.create_user(
                 mobile_number=mobile_number,
                 pin=pin,
                 business_name=business_name,
                 email=email,
+                business_profile_image = business_profile_image,
                 is_institute=True
             )
 
             # Step 5: Send welcome email
             context = {
+                "business_profile_image": business_profile_image,
                 "business_name": business_name,
                 "email": email,
                 "pin": pin,
@@ -198,7 +200,7 @@ class InstituteSignupApi(APIView):
 
             send_template_email(
                 subject="🎉 Welcome to JSJCard Institute Portal",
-                template_name="email_template/welcome_istitute.html",
+                template_name="email_template/welcome_institute.html",
                 context=context,
                 recipient_list=[email]
             )
@@ -211,6 +213,44 @@ class InstituteSignupApi(APIView):
         # Step 7: If validation fails
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+    
+
+class InstituteUpdateApi(APIView):
+    """
+    API endpoint to update institute details using business_id.
+    """
+    authentication_classes = [UserTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+ 
+    @swagger_auto_schema(
+        request_body=serializers.InstituteUpdateSerializer,
+        operation_description="Update institute details like name, email, image, etc.",
+        responses={200: "Update successful", 400: "Validation error"}
+    )
+    def put(self, request, business_id):
+        try:
+            # Step 1: Get the instance using business_id
+            try:
+                business = Business.objects.get(business_id=business_id, is_institute=True)
+            except Business.DoesNotExist:
+                return Response({"error": "Institute not found with this ID."}, status=status.HTTP_404_NOT_FOUND)
+
+           
+            # Step 2: Pass the instance and data to the serializer
+            serializer = serializers.InstituteUpdateSerializer(business, data=request.data, partial=True)
+
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    "message": "Institute profile updated successfully.",
+                    "data": serializer.data
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     
     
 class AddGovernmentUserApi(APIView):
