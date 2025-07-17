@@ -616,6 +616,7 @@ class BusinessRegistrationSerializer(serializers.ModelSerializer):
         instance.email = validated_data.get('email', instance.email)
         instance.business_notes = validated_data.get('business_notes', instance.business_notes)
         instance.business_updated_by = validated_data.get('business_updated_by', instance.business_updated_by)
+        instance.business_profile_image = validated_data.get('business_profile_image', instance.business_profile_image)
 
         instance.save()
         return instance

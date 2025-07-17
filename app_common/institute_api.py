@@ -213,11 +213,45 @@ class PublicMemberRegisterAPI(APIView):
     """
     Open API to register a Member using referral ID, accessible via public links.
     """
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                'referId',
+                openapi.IN_QUERY,
+                description="Referral ID of the Business (e.g., BUS123)",
+                type=openapi.TYPE_STRING
+            )
+        ],
+        responses={200: 'Referral details retrieved successfully', 404: 'Invalid referral ID'},
+        tags=["Public Registration"]
+    )
+    def get(self, request):
+        refer_id = request.query_params.get("referId")  # from URL like ?referId=BUS123
+        print(refer_id, "refer_id====================")
 
+        if not refer_id:
+            return Response({"error": "Referral ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Assuming referral ID maps to a Business model's business_id
+            business = models.Business.objects.get(business_id=refer_id)
+        except models.Business.DoesNotExist:
+            return Response({"error": "Invalid Referral ID"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Return referral details (you can customize fields returned here)
+        return Response({
+            "business_id": business.business_id,
+            "business_name": business.business_name,
+            "business_type": business.business_type,
+            "mobile_number": business.mobile_number,
+            "business_profile_image": business.business_profile_image,
+            "email": business.email,
+            "country_code": business.business_country_code,
+        }, status=status.HTTP_200_OK)
     @swagger_auto_schema(request_body=serializers.JobMitraAddMemberSerializer, tags=["Public Registration"])
     def post(self, request):
-        # refer_id = request.query_params.get("referId")  # from URL like ?referId=BUS123
-        
+        refer_id = request.query_params.get("referId")  # from URL like ?referId=BUS123
+        print(refer_id,"refer_id====================")
         data = request.data.copy()
 
        
