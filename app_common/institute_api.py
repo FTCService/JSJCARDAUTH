@@ -78,6 +78,7 @@ class AddMemberByInstituteApi(APIView):
                 "village": village,
                 "pincode": pincode
             }
+           
             # Create staff user
             user = Member.objects.create(
                 email=email,
@@ -87,6 +88,12 @@ class AddMemberByInstituteApi(APIView):
                 MbrReferalId=referal_id,
                 address=address
             )
+            
+            try:
+                business = models.Business.objects.get(business_id=referal_id)
+            except models.Business.DoesNotExist:
+                return Response({"error": "Invalid Referral ID"}, status=status.HTTP_404_NOT_FOUND)
+
                 # ✅ Handle multiple purpose entries
             purposes_data = request.data.get("card_purposes", [
                 {"purpose": "consumer", "features": ["Reward"]}
@@ -115,6 +122,11 @@ class AddMemberByInstituteApi(APIView):
                     "full_name": user.full_name,
                     "mobile_number": user.mobile_number,
                     "email": user.email or ""
+                },
+                EducationDetails={
+                    "universityName":business.business_name,
+                    "instituteId":business.business_id
+                    
                 }
             )
             return Response({"success": True,"message": "member added successfully","member": {
@@ -229,8 +241,8 @@ class PublicMemberRegisterAPI(APIView):
         refer_id = request.query_params.get("referId")  # from URL like ?referId=BUS123
         print(refer_id, "refer_id====================")
 
-        if not refer_id:
-            return Response({"error": "Referral ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+        # if not refer_id:
+        #     return Response({"error": "Referral ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             # Assuming referral ID maps to a Business model's business_id
@@ -283,6 +295,11 @@ class PublicMemberRegisterAPI(APIView):
                 "village": village,
                 "pincode": pincode
             }
+            try:
+                business = models.Business.objects.get(business_id=refer_id)
+            except models.Business.DoesNotExist:
+                return Response({"error": "Invalid Referral ID"}, status=status.HTTP_404_NOT_FOUND)
+
             # Create staff user
             user = Member.objects.create(
                 email=email,
@@ -321,6 +338,11 @@ class PublicMemberRegisterAPI(APIView):
                     "full_name": user.full_name,
                     "mobile_number": user.mobile_number,
                     "email": user.email or ""
+                },
+                EducationDetails={
+                    "universityName":business.business_name,
+                    "instituteId":business.business_id
+                    
                 }
             )
             # ✅ Generate Token
