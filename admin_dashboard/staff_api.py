@@ -215,13 +215,41 @@ class InstituteSignupApi(APIView):
     
     
 
-class InstituteUpdateApi(APIView):
-    """
-    API endpoint to update institute details using business_id.
-    """
+class InstitutedetailsApi(APIView):
     authentication_classes = [UserTokenAuthentication]
     permission_classes = [IsAuthenticated]
- 
+
+    @swagger_auto_schema(
+        operation_description="Retrieve institute details, count of referred members, and member list.",
+        responses={200: "Institute details with member list", 404: "Not found"},
+        tags=["Institute"]
+    )
+    def get(self, request, business_id):
+        try:
+            try:
+                business = Business.objects.get(business_id=business_id, is_institute=True)
+            except Business.DoesNotExist:
+                return Response({"error": "Institute not found with this ID."}, status=status.HTTP_404_NOT_FOUND)
+
+            # Fetch members who used this business_id as MbrReferalId
+            referred_members = Member.objects.filter(MbrReferalId=business_id)
+
+            # Count and serialize
+            member_count = referred_members.count()
+            member_data = serializers.MemberSerializer(referred_members, many=True).data
+
+            # Serialize institute
+            serializer = serializers.InstituteUpdateSerializer(business)
+
+            return Response({
+                "message": "Institute details retrieved successfully.",
+                "data": serializer.data,
+                "member_count": member_count,
+                "members": member_data
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     @swagger_auto_schema(
         request_body=serializers.InstituteUpdateSerializer,
         operation_description="Update institute details like name, email, image, etc.",
