@@ -190,7 +190,7 @@ class AddStaffApi(APIView):
             # Create staff user
             user = User.objects.create(
                 email=email,
-                password=password,
+                password=make_password(password),
                 full_name=full_name,
                 employee_id=employee_id,
                 mobile_number=mobile_number,
@@ -359,7 +359,11 @@ class MemberVerifyOtpApi(APIView):
                     "email": user.email or ""
                 }
             )
-            
+            models.CardMapper.objects.create(
+                primary_card=user,
+                secondary_card=user.mbrcardno,
+                secondary_card_type="digital"
+            )
             # ✅ Generate Token
             token = secrets.token_hex(32)  # Or use uuid.uuid4().hex
             models.MemberAuthToken.objects.create(

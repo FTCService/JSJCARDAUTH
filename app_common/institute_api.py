@@ -129,6 +129,25 @@ class AddMemberByInstituteApi(APIView):
                     
                 }
             )
+            models.CardMapper.objects.create(
+                business_id=business.business_id,
+                primary_card=user,
+                secondary_card=user.mbrcardno,
+                secondary_card_type="digital"
+            )
+            send_template_email(
+                subject="Welcome to JSJCard!",
+                template_name="email_template/member_welcome.html",
+                context={
+                    'full_name': user.full_name,
+                    'mbrcardno': user.mbrcardno,
+                    'email': user.email,
+                    'mobile_number': user.mobile_number,
+                    'card_purposes': final_purpose_list,
+                    'created_at': user.MbrCreatedAt.strftime('%Y-%m-%d %H:%M:%S'),
+                },
+                recipient_list=[user.email]
+            )
             return Response({"success": True,"message": "member added successfully","member": {
                 "mbrcardno": user.mbrcardno,
                 "full_name": user.full_name,
@@ -344,6 +363,12 @@ class PublicMemberRegisterAPI(APIView):
                     "instituteId":business.business_id
                     
                 }
+            )
+            models.CardMapper.objects.create(
+                business_id=business.business_id,
+                primary_card=user,
+                secondary_card=user.mbrcardno,
+                secondary_card_type="digital"
             )
             # ✅ Generate Token
             token = secrets.token_hex(32)  # Or use uuid.uuid4().hex

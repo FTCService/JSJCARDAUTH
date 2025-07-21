@@ -747,7 +747,7 @@ class CardMapperSerializer(serializers.ModelSerializer):
     class Meta:
         model = CardMapper
         fields = [
-            'business',
+            'business_id',
             'primary_card',
             'secondary_card',
             'secondary_card_type',

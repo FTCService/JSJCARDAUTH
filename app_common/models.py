@@ -314,18 +314,14 @@ class CardMapper(models.Model):
     SECONDARY_CARD_TYPE_CHOICES = [
         ('physical', 'Physical Card'),
         ('prepaid', 'Prepaid Card'),
+        ('digital', 'Digital Card'),
         
     ]
-    business = models.ForeignKey(Business, on_delete=models.CASCADE,related_name='card_mappings',to_field='business_id')
+    business_id = models.IntegerField(null=True, blank=True)
     primary_card = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='primary_card_mappings',to_field='mbrcardno')
-    secondary_card = models.ForeignKey(PhysicalCard,on_delete=models.CASCADE,to_field='card_number',verbose_name="Secondary Card",related_name="card_mappings")
+    secondary_card = models.BigIntegerField(verbose_name="Secondary Card")
     secondary_card_type = models.CharField(max_length=20,choices=SECONDARY_CARD_TYPE_CHOICES,default='physical')
     created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        verbose_name = "Card Mapper"
-        verbose_name_plural = "Card Mappers"
-        unique_together = ('business', 'primary_card', 'secondary_card')  # Optional: avoid duplicates
-
-    def __str__(self):
-        return f"{self.business.business_name} | Primary: {self.primary_card.mbrcardno} | Secondary: {self.secondary_card} ({self.secondary_card_type})"
+   
+   

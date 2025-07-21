@@ -7,14 +7,15 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from app_common.models import Member
-from . import serializers
+from app_common.models import Member, CardMapper
+from member.models import JobProfile
+from . import serializers, models
 from helpers.utils import send_otp_to_mobile
 from app_common.authentication import UserTokenAuthentication
 from django.db.models import Q
 from app_common.serializers import MemberRegistrationSerializer
 from django.contrib.auth.hashers import make_password
-
+from app_common.email import send_template_email
 
 
 class FilteredMemberListApi(APIView):
@@ -213,7 +214,54 @@ class AddMemberByJobMitraApi(APIView):
                 MbrReferalId=referal_id,
                 address=address
             )
+            purposes_data = request.data.get("card_purposes", [
+                {"purpose": "consumer", "features": ["Reward"]}
+            ])
+
+            final_purpose_list = []
+
+            for entry in purposes_data:
+                purpose_name = entry.get("purpose", "consumer")
+                features = entry.get("features", [])
+
+                purpose_obj = models.CardPurpose.objects.filter(purpose_name=purpose_name).first()
+                if purpose_obj:
+                    final_purpose_list.append({
+                        "id": purpose_obj.id,
+                        "purpose": purpose_obj.purpose_name,
+                        "features": features or purpose_obj.features  # fallback to default
+                    })
+
+            user.card_purposes = final_purpose_list 
             user.save()
+            JobProfile.objects.create(
+                MbrCardNo=user,
+                BasicInformation={
+                    "full_name": user.full_name,
+                    "mobile_number": user.mobile_number,
+                    "email": user.email or ""
+                }  
+            )
+            CardMapper.objects.create(
+                primary_card=user,
+                secondary_card=user.mbrcardno,
+                secondary_card_type="digital"
+            )
+            send_template_email(
+                subject="Welcome to JSJCard!",
+                template_name="email_template/member_welcome.html",
+                context={
+                    'full_name': user.full_name,
+                    'mbrcardno': user.mbrcardno,
+                    'email': user.email,
+                    'mobile_number': user.mobile_number,
+                    'card_purposes': final_purpose_list,
+                    'created_at': user.MbrCreatedAt.strftime('%Y-%m-%d %H:%M:%S'),
+                },
+                recipient_list=[user.email]
+            )
+            
+            
             return Response({"message": "member added successfully"}, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
