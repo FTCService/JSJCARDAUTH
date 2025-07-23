@@ -16,8 +16,8 @@ from app_common.authentication import UserTokenAuthentication
 from app_common.models import PhysicalCard 
 from collections import defaultdict
 import random
-
-
+from member.serializers import JobProfileSerializer
+from member.models import JobProfile
 
 
 
@@ -99,6 +99,38 @@ class MemberDetailApi(APIView):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Member.DoesNotExist:
             return Response({"error": "Member not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+class JobprofileDetailsOfMember(APIView):
+    """API to get all categories with their fields formatted as key-value pairs."""
+    authentication_classes = [UserTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    @swagger_auto_schema(
+        responses={200: JobProfileSerializer()},
+        tags=["Job Profile Management"]
+    )
+    def get(self, request, card_number):
+        """Retrieve the logged-in user's job profile"""
+        try:
+           
+           
+            job_profile = JobProfile.objects.get(MbrCardNo=card_number)
+           
+            serializer = JobProfileSerializer(job_profile)
+            response_data = serializer.data
+            # response_data["full_name"] = request.user.full_name
+            # response_data["MbrCardNo"] = request.user.mbrcardno
+            # response_data["mobile_no"] = request.user.mobile_number
+            # response_data["email"] = request.user.email
+
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        except Member.DoesNotExist:
+            return Response({"error": "Member not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+        except JobProfile.DoesNotExist:
+            return Response({"error": "Job Profile Not Found"}, status=status.HTTP_404_NOT_FOUND)
 
 
 
@@ -768,3 +800,8 @@ class JobProfileFieldListByCategory(APIView):
             "status": True,
             "results": response_fields
         }, status=status.HTTP_200_OK)
+        
+        
+        
+        
+    
