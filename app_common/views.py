@@ -565,7 +565,7 @@ class MemberForgotPinAPI(APIView):
             user.otp = otp
             user.save()
 
-            send_otp_to_mobile({"mobile_number": mobile_number, "otp": otp})
+            send_fast2sms(mobile_number,otp)
             return Response({"message": "OTP sent successfully"}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
