@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'corsheaders',
+    'campaign_management',
 ]
 
 MIDDLEWARE = [
@@ -177,7 +178,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 REWARD_SERVER_URL =env_vars['REWARD_SERVER_URL']
 
-JOB_SERVER_URL =env_vars['JOB_SERVER_URL']
+#JOB_SERVER_URL =env_vars['JOB_SERVER_URL']
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -186,3 +187,4 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'noreplyf577@gmail.com'
 EMAIL_HOST_PASSWORD = 'nuof azfj attm ijbq'
+
