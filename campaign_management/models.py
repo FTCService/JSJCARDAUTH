@@ -28,17 +28,29 @@ class Template(models.Model):
     def __str__(self):
         return f"{self.name} ({self.type})"
 
-
 class Group(models.Model):
+    GROUP_TYPE_CHOICES = [
+        ('business', 'Business'),
+        ('member', 'Member'),
+        ('staff', 'Staff'),
+        ('all', 'All'),
+    ]
+
     name = models.CharField(max_length=255)
+    group_type = models.CharField(
+        max_length=20,
+        choices=GROUP_TYPE_CHOICES,
+        default='member'  # You can change 'member' to any default you prefer
+    )
     description = models.TextField(blank=True, null=True)
-    tags = models.CharField(max_length=255, help_text="Comma-separated tags", blank=True)
-    company = models.CharField(max_length=255, blank=True, null=True)
-    
-    email = models.JSONField(default=list, blank=True, null=True)  # ✅ Should be JSONField
-    mobile_number = models.JSONField(default=list, blank=True, null=True)  # ✅ Should be JSONField
-    
+    email = models.JSONField(default=list, blank=True)
+    mobile_number = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+
 
 
 
@@ -70,15 +82,3 @@ class Campaign(models.Model):
         return f"{self.name} ({self.type})"
 
 
-class MessageStatus(models.Model):
-    campaign = models.ForeignKey('Campaign', on_delete=models.CASCADE, related_name='statuses')  # ✅ Add this
-    channel = models.CharField(max_length=20)  # Email, SMS, WhatsApp
-    message_id = models.CharField(max_length=255, blank=True, null=True)
-    recipient = models.CharField(max_length=255)
-    status = models.CharField(max_length=20)  # sent, delivered, seen, failed
-    event_type = models.CharField(max_length=50, blank=True, null=True)
-    timestamp = models.DateTimeField(auto_now_add=True)
-    raw_payload = models.JSONField(blank=True, null=True)
-
-    def __str__(self):
-        return f"{self.channel} | {self.recipient} | {self.status}"
