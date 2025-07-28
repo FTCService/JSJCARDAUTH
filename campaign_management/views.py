@@ -9,9 +9,12 @@ from .models import Template, Group, Campaign
 from .serializers import TemplateSerializer, GroupSerializer, CampaignSerializer
 from django.shortcuts import get_object_or_404
 from app_common.models import Member, Business, User
-import time
+from django.utils import timezone
+#from .tasks import schedule_campaign_send  # ✅ Required for scheduling
 from app_common.email import send_template_email
 from helpers.utils import send_fast2sms
+from .models import CustomerHelpTicket
+from .serializers import CustomerSupportRequestSerializer
 
 class TemplateAPIView(APIView):
     
@@ -159,37 +162,44 @@ class CampaignAPIView(APIView):
         if serializer.is_valid():
             try:
                 campaign = serializer.save()
-
-                if campaign.type == "Email" and campaign.delivery_option == "Send Now":
+                content = campaign.content or (campaign.template.content if campaign.template else "")
+                
+                if campaign.delivery_option == "Send Now":
                     for group in campaign.groups.all():
-                        for email in group.email:
-                            context = {
-                                "full_name": "",  # Add dynamic values if available
-                                "email": email,
-                                "mobile_number": "",  # Add dynamic values if needed
-                            }
-                            try:
-                                send_template_email(
-                                    subject=campaign.subject or "JSJ Card Campaign",
-                                    template_name="email_template/email_campaign.html",
-                                    context=context,
-                                    recipient_list=[email]
-                                )
-                                print(f"✅ Email sent successfully to: {email}")
-                            except Exception as e:
-                                print(f"❌ Failed to send email to {email}: {str(e)}")
+                        contacts = getattr(group, "contacts", None)
+                        if not contacts:
+                            continue
 
-                            time.sleep(1)  # Optional: Prevent AWS SES rate limit errors
-                            
-                elif campaign.type == "SMS" and campaign.delivery_option == "Send Now":
-                    for group in campaign.groups.all():
-                        for mobile in group.mobile_numbers:  # Assumes this returns a list
-                            try:
-                                send_fast2sms(mobile, campaign.message)
-                                print(f"✅ SMS sent to {mobile} with message: {campaign.message}")
-                            except Exception as e:
-                                print(f"❌ Failed to send SMS to {mobile}: {e}")
-                            time.sleep(1)  # Optional: prevent API throttling
+                        for contact in contacts.all():
+                            if campaign.type == "Email":
+                                context = {
+                                    "full_name": contact.name or "",
+                                    "email": contact.email,
+                                    "mobile_number": contact.phone or "",
+                                }
+                                try:
+                                    send_template_email(
+                                        subject=campaign.subject or "JSJ Card Campaign",
+                                        template_name="email_template/email_campaign.html",
+                                        context=context,
+                                        recipient_list=[contact.email]
+                                    )
+                                    print(f"✅ Email sent to {contact.email}")
+                                except Exception as e:
+                                    print(f"❌ Email failed to {contact.email}: {e}")
+                                time.sleep(1)
+
+                            elif campaign.type == "SMS":
+                                try:
+                                    send_fast2sms(contact.phone, content)
+                                    print(f"✅ SMS sent to {contact.phone}")
+                                except Exception as e:
+                                    print(f"❌ SMS failed to {contact.phone}: {e}")
+                                time.sleep(1)
+
+                elif campaign.delivery_option == "Schedule":
+                    if campaign.scheduled_time and campaign.scheduled_time > timezone.now():
+                        schedule_campaign_send.apply_async(args=[campaign.id], eta=campaign.scheduled_time)
 
                 return Response(CampaignSerializer(campaign).data, status=status.HTTP_201_CREATED)
 
@@ -198,4 +208,71 @@ class CampaignAPIView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+class CustomerSupportRequestAPIView(APIView):
+    """
+    API to list all customer support requests or submit a new one.
+    """
+    
 
+    @swagger_auto_schema(
+        operation_description="Retrieve a list of all customer support requests.",
+        responses={200: CustomerSupportRequestSerializer(many=True)},
+        tags=["Customer Support"]
+    )
+    def get(self, request):
+        try:
+            requests = CustomerHelpTicket.objects.all().order_by('-created_at')
+            serializer = CustomerSupportRequestSerializer(requests, many=True)
+            return Response({
+                "success": True,
+                "message": "Support requests retrieved successfully.",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                "success": False,
+                "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @swagger_auto_schema(
+        operation_description="Submit a new customer support request.",
+        request_body=CustomerSupportRequestSerializer,
+        responses={201: CustomerSupportRequestSerializer},
+        tags=["Customer Support"]
+    )
+    def post(self, request):
+        try:
+            serializer = CustomerSupportRequestSerializer(data=request.data)
+            if serializer.is_valid():
+                support_request = serializer.save()
+
+                # Prepare email context
+                context = {
+                    "full_name": support_request.full_name,
+                    "email": support_request.email,
+                    "phone_number": support_request.phone_number,
+                    "message": support_request.message
+                }
+
+                # Send email to support team
+                send_template_email(
+                    subject="New Customer Support Request",
+                    template_name="email_template/from.html",
+                    context=context,
+                    recipient_list=["support_team@example.com"]  # update with your email
+                )
+
+                return Response({
+                    "success": True,
+                    "message": "Support request submitted successfully.",
+                    "data": serializer.data
+                }, status=status.HTTP_201_CREATED)
+            return Response({
+                "success": False,
+                "errors": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({
+                "success": False,
+                "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
