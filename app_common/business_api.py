@@ -541,10 +541,9 @@ class BusinessDetailsByIdAPI(APIView):
     
 
 class InitiateCardAssignmentView(APIView):
-    
     authentication_classes = [BusinessTokenAuthentication]
     permission_classes = [IsAuthenticated]
-    
+
     @swagger_auto_schema(
         request_body=serializers.InitiateCardAssignmentSerializer,
         operation_description="Initiate assignment of a physical card to a member.",
@@ -558,25 +557,22 @@ class InitiateCardAssignmentView(APIView):
             mobile_number = data['mobile_number']
             full_name = data['full_name']
             pin = data.get('pin')
-            
+
+            # Get the Business instance
             try:
-            # Get the actual Business instance
                 business = models.Business.objects.get(business_id=request.user.business_id)
             except models.Business.DoesNotExist:
                 return Response({"message": "Business not found."}, status=status.HTTP_200_OK)
-            
-           
-            # Check if physical card exists and not issued
-            physical_card_qs = models.PhysicalCard.objects.filter(card_number=card_number, business=business.business_id)
 
+            # Check if physical card exists and is not already issued
+            physical_card_qs = models.PhysicalCard.objects.filter(card_number=card_number, business=business.business_id)
             if not physical_card_qs.exists():
                 return Response({"message": "Card not found."}, status=status.HTTP_200_OK)
 
             physical_card = physical_card_qs.first()
 
-            # Check if this card is already mapped as a secondary card
-            card_mapper_qs = models.CardMapper.objects.filter(secondary_card=physical_card)
-
+            # Check if this card is already mapped
+            card_mapper_qs = models.CardMapper.objects.filter(secondary_card=physical_card.card_number)
             if card_mapper_qs.exists():
                 existing_mapping = card_mapper_qs.first()
                 return Response({
@@ -584,58 +580,43 @@ class InitiateCardAssignmentView(APIView):
                     "mbrcardno": existing_mapping.primary_card.mbrcardno
                 }, status=status.HTTP_200_OK)
 
-                        
-                        
-            physical_card = physical_card_qs.first()
-
             # Check if member with this mobile number exists
             member_qs = models.Member.objects.filter(mobile_number=mobile_number)
-            
             if member_qs.exists():
-                    member = member_qs.first()
-                    # print(member.mbrcardno,"-----------")
-                    # member_data = get_member_active_in_marchant(card_number=member.mbrcardno, business_id=business.business_id)
-                    # # If we reach here, member is active and we proceed
-                    # BizMbrIsActive = member_data.get("BizMbrIsActive", True)  # default to True if not present
-                    
-                    # Existing member, map as secondary card
-                    models.CardMapper.objects.create(
-                        business=business,
-                        primary_card=member,
-                        secondary_card=physical_card,
-                        secondary_card_type='physical'
-                    )
-                    physical_card.issued = True
-                    physical_card.save()
+                member = member_qs.first()
 
-                    return Response({
-                        "message": "Existing member found. Secondary card assigned.",
-                        "mbrcardno": member.mbrcardno,
-                    }, status=status.HTTP_200_OK)
+                # Existing member, map as secondary card
+                models.CardMapper.objects.create(
+                    business_id=business.business_id,
+                    primary_card=member,
+                    secondary_card=physical_card.card_number,
+                    secondary_card_type='physical'
+                )
+                physical_card.issued = True
+                physical_card.save()
 
-
+                return Response({
+                    "message": "Existing member found. Secondary card assigned.",
+                    "mbrcardno": member.mbrcardno,
+                }, status=status.HTTP_200_OK)
             else:
-                
-               
                 # Create new member
                 new_member = models.Member.objects.create(
                     mobile_number=mobile_number,
                     full_name=full_name
                 )
                 new_member.set_pin(pin)  # Securely hash pin
+                new_member.save()
 
                 # Map card as secondary to new member
                 models.CardMapper.objects.create(
-                    business=business,
+                    business_id=business.business_id,
                     primary_card=new_member,
-                    secondary_card=physical_card,
+                    secondary_card=physical_card.card_number,
                     secondary_card_type='physical'
                 )
                 physical_card.issued = True
                 physical_card.save()
-
-                # Optional welcome message
-                # send_message_welcome_to_mobile({"mobile_number": mobile_number})
 
                 return Response({
                     "message": "New member created and card assigned.",
@@ -643,6 +624,7 @@ class InitiateCardAssignmentView(APIView):
                 }, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
     
@@ -656,7 +638,7 @@ class AllCardMappingsByBusiness(APIView):
         responses={200: serializers.CardMapperSerializer()}
     )
     def get(self, request):
-        mappings = models.CardMapper.objects.filter(business__business_id=request.user.business_id)
+        mappings = models.CardMapper.objects.filter(business_id=request.user.business_id)
         serializer = serializers.CardMapperSerializer(mappings, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     

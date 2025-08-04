@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Template, Group, Campaign, MessageStatus
+from .models import Template, Group, Campaign
 from app_common.models import Business
 
 class TemplateSerializer(serializers.ModelSerializer):
@@ -54,16 +54,3 @@ class CampaignSerializer(serializers.ModelSerializer):
         ]
 
 
-class MessageStatusSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = MessageStatus
-        fields = [
-            'id',
-            'type',  # renamed from 'channel'
-            'message_id',
-            'recipient',
-            'status',
-            'event_type',
-            'timestamp',
-            'raw_payload'
-        ]

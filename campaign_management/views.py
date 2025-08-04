@@ -6,7 +6,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from app_common.authentication import UserTokenAuthentication
 from .models import Template, Group, Campaign, MessageStatus
-from .serializers import TemplateSerializer, GroupSerializer, CampaignSerializer, MessageStatusSerializer
+from .serializers import TemplateSerializer, GroupSerializer, CampaignSerializer
 from django.shortcuts import get_object_or_404
 from app_common.models import Member, Business
 import time
@@ -185,26 +185,4 @@ class CampaignAPIView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-
-class CampaignStatusAPIView(APIView):
-    """
-    Get all message delivery statuses for a specific campaign.
-    """
-    authentication_classes = [UserTokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    @swagger_auto_schema(
-        operation_description="Get all message delivery statuses for a campaign",
-        responses={200: MessageStatusSerializer(many=True)},
-        tags=["campaign_management"]
-    )
-    def get(self, request, campaign_id):
-        try:
-            campaign = get_object_or_404(Campaign, id=campaign_id)
-            statuses = MessageStatus.objects.filter(campaign=campaign).order_by('-timestamp')
-            serializer = MessageStatusSerializer(statuses, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": f"Internal Server Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
