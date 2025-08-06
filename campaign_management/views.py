@@ -8,9 +8,11 @@ from app_common.authentication import UserTokenAuthentication
 from .models import Template, Group, Campaign
 from .serializers import TemplateSerializer, GroupSerializer, CampaignSerializer
 from django.shortcuts import get_object_or_404
-from app_common.models import Member, Business
-import time
+from app_common.models import Member, Business, User
+from django.utils import timezone
+#from .tasks import schedule_campaign_send  # ✅ Required for scheduling
 from app_common.email import send_template_email
+from helpers.utils import send_fast2sms
 
 class TemplateAPIView(APIView):
     
@@ -51,14 +53,11 @@ class TemplateAPIView(APIView):
     
     
 class GroupAPIView(APIView):
-    """
-    Handles creation and listing of groups with combined business & member contacts.
-    """
     authentication_classes = [UserTokenAuthentication]
     permission_classes = [IsAuthenticated]
-    
+
     @swagger_auto_schema(
-        operation_description="Get all groups",
+        operation_description="List all groups",
         responses={200: GroupSerializer(many=True)},
         tags=["campaign_management"]
     )
@@ -71,17 +70,17 @@ class GroupAPIView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @swagger_auto_schema(
-        operation_description="Create a new group with all member and business contacts.",
+        operation_description="Create a group by selecting a group_type (business, member, staff, all).",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            required=["name"],
+            required=["name", "group_type"],
             properties={
                 "name": openapi.Schema(type=openapi.TYPE_STRING),
+                "group_type": openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    enum=["business", "member", "staff", "all"]
+                ),
                 "description": openapi.Schema(type=openapi.TYPE_STRING),
-                "tags": openapi.Schema(type=openapi.TYPE_STRING),
-                "company": openapi.Schema(type=openapi.TYPE_STRING),
-                "email": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING), description="List of email addresses"),
-                "mobile_number": openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_STRING), description="List of mobile numbers"),
             },
         ),
         responses={201: openapi.Response("Created", GroupSerializer)},
@@ -89,33 +88,38 @@ class GroupAPIView(APIView):
     )
     def post(self, request):
         data = request.data.copy()
-        
-        # --- 1. Handle optional manual emails/mobiles ---
-        input_emails = data.get("email", [])
-        input_mobiles = data.get("mobile_number", [])
+        group_type = data.get("group_type")
 
-        # If single string provided, convert to list
-        if isinstance(input_emails, str):
-            input_emails = [input_emails]
-        if isinstance(input_mobiles, str):
-            input_mobiles = [input_mobiles]
+        if group_type not in ["business", "member", "staff", "all"]:
+            return Response(
+                {"error": "Invalid group_type. Must be one of: business, member, staff, all."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        business_emails = list(Business.objects.exclude(email__isnull=True).exclude(email__exact='').values_list('email', flat=True))
-        business_mobiles = list(Business.objects.exclude(mobile_number__isnull=True).exclude(mobile_number__exact='').values_list('mobile_number', flat=True))
+        emails = []
+        mobiles = []
 
-        member_emails = list(Member.objects.exclude(email__isnull=True).exclude(email__exact='').values_list('email', flat=True))
-        member_mobiles = list(Member.objects.exclude(mobile_number__isnull=True).exclude(mobile_number__exact='').values_list('mobile_number', flat=True))
+        if group_type in ["business", "all"]:
+            emails += list(Business.objects.exclude(email__isnull=True).exclude(email__exact='').values_list('email', flat=True))
+            mobiles += list(Business.objects.exclude(mobile_number__isnull=True).exclude(mobile_number__exact='').values_list('mobile_number', flat=True))
 
-        all_emails = list(set(business_emails + member_emails))
-        all_mobiles = list(set(business_mobiles + member_mobiles))
+        if group_type in ["member", "all"]:
+            emails += list(Member.objects.exclude(email__isnull=True).exclude(email__exact='').values_list('email', flat=True))
+            mobiles += list(Member.objects.exclude(mobile_number__isnull=True).exclude(mobile_number__exact='').values_list('mobile_number', flat=True))
 
-        data["email"] = all_emails
-        data["mobile_number"] = all_mobiles
+        if group_type in ["staff", "all"]:
+            emails += list(User.objects.exclude(email__isnull=True).exclude(email__exact='').values_list('email', flat=True))
+            # Remove this line if User doesn't have mobile_number
+            if hasattr(User, 'mobile_number'):
+                mobiles += list(User.objects.exclude(mobile_number__isnull=True).exclude(mobile_number__exact='').values_list('mobile_number', flat=True))
+
+        data["email"] = list(set(emails))
+        data["mobile_number"] = list(set(mobiles))
 
         serializer = GroupSerializer(data=data)
         if serializer.is_valid():
             group = serializer.save()
-            return Response(GroupSerializer(group).data, status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -142,47 +146,4 @@ class CampaignAPIView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    @swagger_auto_schema(
-        operation_description="Create a new campaign",
-        request_body=CampaignSerializer,
-        responses={
-            201: openapi.Response("Campaign created", CampaignSerializer),
-            400: "Bad Request"
-        },
-        tags=["campaign_management"]
-    )
-    def post(self, request):
-        serializer = CampaignSerializer(data=request.data)
-        if serializer.is_valid():
-            try:
-                campaign = serializer.save()
-
-                if campaign.type == "Email" and campaign.delivery_option == "Send Now":
-                    for group in campaign.groups.all():
-                        for email in group.email:
-                            context = {
-                                "full_name": "",  # Add dynamic values if available
-                                "email": email,
-                                "mobile_number": "",  # Add dynamic values if needed
-                            }
-                            try:
-                                send_template_email(
-                                    subject=campaign.subject or "JSJ Card Campaign",
-                                    template_name="email_template/email_campaign.html",
-                                    context=context,
-                                    recipient_list=[email]
-                                )
-                                print(f"✅ Email sent successfully to: {email}")
-                            except Exception as e:
-                                print(f"❌ Failed to send email to {email}: {str(e)}")
-
-                            time.sleep(1)  # Optional: Prevent AWS SES rate limit errors
-
-                return Response(CampaignSerializer(campaign).data, status=status.HTTP_201_CREATED)
-
-            except Exception as e:
-                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-
+   
