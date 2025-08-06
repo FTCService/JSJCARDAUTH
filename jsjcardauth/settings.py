@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'corsheaders',
     'campaign_management',
+    'crm',
 ]
 
 MIDDLEWARE = [

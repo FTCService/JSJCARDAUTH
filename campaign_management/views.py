@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from app_common.authentication import UserTokenAuthentication
-from .models import Template, Group, Campaign, MessageStatus
+from .models import Template, Group, Campaign
 from .serializers import TemplateSerializer, GroupSerializer, CampaignSerializer
 from django.shortcuts import get_object_or_404
 from app_common.models import Member, Business
