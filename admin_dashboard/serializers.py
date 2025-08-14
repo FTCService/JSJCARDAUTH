@@ -10,7 +10,7 @@ class BusinessShortSerializer(serializers.ModelSerializer):
         model = Business
         fields = ['business_id', 'business_name']
 
-class MemberSerializer(serializers.ModelSerializer):
+class MemberDataSerializer(serializers.ModelSerializer):
     password = serializers.CharField(required=False, write_only=True)
     class Meta:
         model = Member

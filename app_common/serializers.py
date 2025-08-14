@@ -316,7 +316,8 @@ class MemberResendOtpSerializer(serializers.Serializer):
 
 
 
-
+class MemberExistenceSerializer(serializers.Serializer):
+    mobile_number = serializers.CharField(required=True, max_length=50)
 # this serializer for send to business all details of member 
 class MemberSerializer(serializers.ModelSerializer):
     state = serializers.SerializerMethodField()
@@ -363,6 +364,8 @@ class MemberSerializer(serializers.ModelSerializer):
 
     def get_pincode(self, obj):
         return obj.address.get("pincode")
+
+
 
         
 
@@ -445,6 +448,12 @@ class MemberRegistrationSerializer(serializers.ModelSerializer):
         return instance
 
 
+
+class EntryPassMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Member
+        fields = ["MbrReferalId","full_name","mobile_number" "email", "pin"]
+        
 
 
 
