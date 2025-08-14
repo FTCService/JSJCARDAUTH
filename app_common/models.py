@@ -193,6 +193,7 @@ class Business(AbstractBaseUser, PermissionsMixin):
         ("Technology", "Technology"),
         ("Finance", "Finance"),
         ("Education", "Education"),
+        ("Others", "Others"),
     ]
     
     business_id = models.CharField(max_length=6, unique=True, editable=False, blank=True)
