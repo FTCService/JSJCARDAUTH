@@ -44,7 +44,7 @@ urlpatterns = [
     path('verify-token/', business_api.VerifyBusinessTokenApi.as_view(), name='verify-token'),
     path('member-details/', views.MemberDetailsByMobileAPI.as_view(), name='member-details'),
     path('cardno/member-details/', views.MemberDetailsByCardNoAPI.as_view(), name='by-cardno-member-details'),
-    
+    path('member-exists/', business_api.MemberExitsApi.as_view(), name='member-exists'),
     path('initiate-card-assignment/', business_api.InitiateCardAssignmentView.as_view(), name="initiate-card-assignment"),
     path('card-mappings/list/', business_api.AllCardMappingsByBusiness.as_view(), name='business-card-mappings'),
     
@@ -71,6 +71,7 @@ urlpatterns = [
     
     path("public/member/register/", institute_api.PublicMemberRegisterAPI.as_view(), name="public-member-register"),
    
+    path("get-primary-card/", views.GetPrimaryCardAPIView.as_view(), name="get-primary-card"),
 
 ]
 

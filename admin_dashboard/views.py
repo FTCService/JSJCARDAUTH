@@ -31,11 +31,11 @@ class MemberListApi(APIView):
 
     @swagger_auto_schema(
         operation_description="Retrieve a list of all registered members.",
-        responses={200: serializers.MemberSerializer(many=True)}
+        responses={200: serializers.MemberDataSerializer(many=True)}
     )
     def get(self, request):
         members = Member.objects.all()
-        serializer = serializers.MemberSerializer(members, many=True)
+        serializer = serializers.MemberDataSerializer(members, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     
@@ -49,7 +49,7 @@ class MemberDetailApi(APIView):
 
     @swagger_auto_schema(
         operation_description="Retrieve details of a specific member.",
-        responses={200: serializers.MemberSerializer()}
+        responses={200: serializers.MemberDataSerializer()}
     )
     def get(self, request, pk):
        
@@ -58,15 +58,15 @@ class MemberDetailApi(APIView):
         """
         try:
             member = Member.objects.get(pk=pk)
-            serializer = serializers.MemberSerializer(member)
+            serializer = serializers.MemberDataSerializer(member)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Member.DoesNotExist:
             return Response({"error": "Member not found"}, status=status.HTTP_404_NOT_FOUND)
         
     @swagger_auto_schema(
         operation_description="Update the details of a specific member.",
-        request_body=serializers.MemberSerializer(),
-        responses={200: serializers.MemberSerializer(), 400: "Bad request"}
+        request_body=serializers.MemberDataSerializer(),
+        responses={200: serializers.MemberDataSerializer(), 400: "Bad request"}
     )
     def put(self, request, pk):
         """
@@ -78,7 +78,7 @@ class MemberDetailApi(APIView):
             return Response({"error": "Member not found"}, status=status.HTTP_404_NOT_FOUND)
 
         # Deserialize the request data into the Member model instance
-        serializer = serializers.MemberSerializer(member, data=request.data, partial=False)
+        serializer = serializers.MemberDataSerializer(member, data=request.data, partial=False)
         
         if serializer.is_valid():
             serializer.save()
