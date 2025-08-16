@@ -18,6 +18,8 @@ import csv, io
 from app_common.email import send_template_email
 from admin_dashboard.models import CardPurpose
 from member.models import JobProfile
+from member.serializers import JobProfileSerializer
+
 
 class BulkBusinessUploadView(APIView):
     def post(self, request, *args, **kwargs):
@@ -568,7 +570,7 @@ class InitiateCardAssignmentView(APIView):
             # Check if physical card exists and is not already issued
             physical_card_qs = models.PhysicalCard.objects.filter(card_number=card_number, business=business.business_id)
             if not physical_card_qs.exists():
-                return Response({"message": "Card not found."}, status=status.HTTP_200_OK)
+                return Response({"success":False,"message": "To activate this card for in-store use, please contact our customer support team at +91 8926600880. We're ready to assist you."}, status=status.HTTP_400_BAD_REQUEST)
 
             physical_card = physical_card_qs.first()
 
@@ -577,6 +579,7 @@ class InitiateCardAssignmentView(APIView):
             if card_mapper_qs.exists():
                 existing_mapping = card_mapper_qs.first()
                 return Response({
+                    "success": False,
                     "message": "Card already issued.",
                     "mbrcardno": existing_mapping.primary_card.mbrcardno
                 }, status=status.HTTP_200_OK)
@@ -597,6 +600,7 @@ class InitiateCardAssignmentView(APIView):
                 physical_card.save()
 
                 return Response({
+                    "success": True,
                     "message": "Existing member found. Secondary card assigned.",
                     "mbrcardno": member.mbrcardno,
                 }, status=status.HTTP_200_OK)
@@ -620,6 +624,7 @@ class InitiateCardAssignmentView(APIView):
                 physical_card.save()
 
                 return Response({
+                    "success": True,
                     "message": "New member created and card assigned.",
                     "mbrcardno": new_member.mbrcardno
                 }, status=status.HTTP_200_OK)
@@ -875,3 +880,38 @@ class AddMemberBybusinessEntrypassApi(APIView):
                 "address": user.address
             }
         }, status=status.HTTP_201_CREATED)
+        
+        
+        
+        
+# class JobProfileOfMemberAPI(APIView):
+#     authentication_classes = [BusinessTokenAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     @swagger_auto_schema(
+#         responses={200: JobProfileSerializer()},
+#         tags=["Job Profile Management"]
+#     )
+#     def get(self, request , card_number):
+#         """Retrieve the logged-in user's job profile"""
+#         try:
+           
+#             member = models.Member.objects.get(mbrcardno=card_number)
+#             job_profile = JobProfile.objects.get(MbrCardNo=member)
+           
+#             serializer = JobProfileSerializer(job_profile)
+#             response_data = serializer.data
+#             response_data["full_name"] = request.user.full_name
+#             response_data["MbrCardNo"] = request.user.mbrcardno
+#             response_data["mobile_no"] = request.user.mobile_number
+#             response_data["email"] = request.user.email
+
+#             return Response(response_data, status=status.HTTP_200_OK)
+
+#         except models.Member.DoesNotExist:
+#             return Response({"error": "Member not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+#         except JobProfile.DoesNotExist:
+#             return Response({"error": "Job Profile Not Found"}, status=status.HTTP_404_NOT_FOUND)
+
+  

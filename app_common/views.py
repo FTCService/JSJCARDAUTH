@@ -850,6 +850,7 @@ class GetPrimaryCardAPIView(APIView):
             return Response({
                 "success": True,
                 "primary_card_number": mapping.primary_card.mbrcardno,
+                "secondary_card_number": mapping.secondary_card,  # ✅ include this
                 "is_associated": True,
                 "message": "Mapped secondary card resolved to primary."
             }, status=status.HTTP_200_OK)
