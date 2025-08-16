@@ -319,6 +319,8 @@ class MemberResendOtpSerializer(serializers.Serializer):
 class MemberExistenceSerializer(serializers.Serializer):
     mobile_number = serializers.CharField(required=True, max_length=50)
 # this serializer for send to business all details of member 
+
+
 class MemberSerializer(serializers.ModelSerializer):
     state = serializers.SerializerMethodField()
     district = serializers.SerializerMethodField()
@@ -394,18 +396,18 @@ class BusinessDetailsSerializer(serializers.ModelSerializer):
 class MemberRegistrationSerializer(serializers.ModelSerializer):
     contact_with_country = serializers.SerializerMethodField()
 
-    # Add meta fields (read from meta_data)
-    state = serializers.SerializerMethodField()
-    district = serializers.SerializerMethodField()
-    block = serializers.SerializerMethodField()
-    village = serializers.SerializerMethodField()
-    pincode = serializers.SerializerMethodField()
+    # keep as CharField for request validation
+    state = serializers.CharField(required=False, allow_blank=True)
+    district = serializers.CharField(required=False, allow_blank=True)
+    block = serializers.CharField(required=False, allow_blank=True)
+    village = serializers.CharField(required=False, allow_blank=True)
+    pincode = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = Member
         fields = [
             'full_name', 'first_name', 'last_name',
-            'mbrcardno', 'email', 'contact_with_country', 'MbrStatus',
+            'mbrcardno', 'email', 'contact_with_country',
             'state', 'district', 'block', 'village', 'pincode'
         ]
         read_only_fields = ['mobile_number', 'pin', 'contact_with_country']
@@ -413,39 +415,33 @@ class MemberRegistrationSerializer(serializers.ModelSerializer):
     def get_contact_with_country(self, obj):
         return f"{obj.MbrCountryCode} {obj.mobile_number}" if obj.mobile_number else None
 
-    def get_state(self, obj):
-        return obj.address.get('state')
-
-    def get_district(self, obj):
-        return obj.address.get('district')
-
-    def get_block(self, obj):
-        return obj.address.get('block')
-
-    def get_village(self, obj):
-        return obj.address.get('village')
-
-    def get_pincode(self, obj):
-        return obj.address.get('pincode')
-
     def update(self, instance, validated_data):
         instance.full_name = validated_data.get('full_name', instance.full_name)
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
         instance.email = validated_data.get('email', instance.email)
-        instance.MbrStatus = validated_data.get('MbrStatus', instance.MbrStatus)
+        # instance.MbrStatus = validated_data.get('MbrStatus', instance.MbrStatus)
 
-        # Update meta_data
+        # ✅ Update address JSON field
         meta = instance.address or {}
-        meta["state"] = validated_data.get("state", meta.get("state"))
-        meta["district"] = validated_data.get("district", meta.get("district"))
-        meta["block"] = validated_data.get("block", meta.get("block"))
-        meta["village"] = validated_data.get("village", meta.get("village"))
-        meta["pincode"] = validated_data.get("pincode", meta.get("pincode"))
+        for field in ["state", "district", "block", "village", "pincode"]:
+            if field in validated_data:
+                meta[field] = validated_data[field]
         instance.address = meta
 
         instance.save()
         return instance
+
+    def to_representation(self, instance):
+        """Customize output so state/district/etc come from JSON field"""
+        data = super().to_representation(instance)
+        address = instance.address or {}
+        data["state"] = address.get("state")
+        data["district"] = address.get("district")
+        data["block"] = address.get("block")
+        data["village"] = address.get("village")
+        data["pincode"] = address.get("pincode")
+        return data
 
 
 
@@ -745,10 +741,10 @@ class InitiateCardAssignmentSerializer(serializers.Serializer):
     mobile_number = serializers.CharField(max_length=15,required = False)
     pin = serializers.CharField(max_length=6,required = False, allow_blank=True)
     
-    def validate_card_number(self, value):
-        if not PhysicalCard.objects.filter(card_number=value).exists():
-            raise serializers.ValidationError("Invalid card number.")
-        return value
+    # def validate_card_number(self, value):
+    #     if not PhysicalCard.objects.filter(card_number=value).exists():
+    #         raise serializers.ValidationError("")
+    #     return value
 
 
 
