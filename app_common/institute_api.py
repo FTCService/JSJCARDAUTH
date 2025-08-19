@@ -183,6 +183,7 @@ class FieldsFormattedforInstitute(APIView):
     """API to get all categories with their fields formatted as key-value pairs."""
     authentication_classes = [BusinessTokenAuthentication]
     permission_classes = [IsAuthenticated]
+
     @swagger_auto_schema(
         responses={200: JobProfileSerializer()},
         tags=["Job Profile Management"]
@@ -190,24 +191,31 @@ class FieldsFormattedforInstitute(APIView):
     def get(self, request, card_number):
         """Retrieve the logged-in user's job profile"""
         try:
-           
-           
-            job_profile = JobProfile.objects.get(MbrCardNo=card_number)
-           
-            serializer = JobProfileSerializer(job_profile)
-            response_data = serializer.data
-            # response_data["full_name"] = request.user.full_name
-            # response_data["MbrCardNo"] = request.user.mbrcardno
-            # response_data["mobile_no"] = request.user.mobile_number
-            # response_data["email"] = request.user.email
+            # Case 1: 16-digit card number
+            if card_number.isdigit() and len(card_number) == 16:
+                member_card_no = card_number
 
-            return Response(response_data, status=status.HTTP_200_OK)
+            # Case 2: 10-digit mobile number
+            elif card_number.isdigit() and len(card_number) == 10:
+                member = Member.objects.get(mobile_number=card_number)
+                member_card_no = member.mbrcardno  # adjust if field name differs
+
+            else:
+                return Response(
+                    {"error": "Invalid input. Provide either 16-digit card number or 10-digit mobile number."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Fetch job profile
+            job_profile = JobProfile.objects.get(MbrCardNo=member_card_no)
+            serializer = JobProfileSerializer(job_profile)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         except Member.DoesNotExist:
-            return Response({"error": "Member not found."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Member not found."}, status=status.HTTP_404_NOT_FOUND)
 
         except JobProfile.DoesNotExist:
-            return Response({"error": "Job Profile Not Found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Job Profile Not Found."}, status=status.HTTP_404_NOT_FOUND)
 
     @swagger_auto_schema(
         request_body=JobProfileSerializer,
