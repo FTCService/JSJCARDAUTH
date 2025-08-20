@@ -11,10 +11,24 @@ class BusinessShortSerializer(serializers.ModelSerializer):
         fields = ['business_id', 'business_name']
 
 class MemberDataSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(required=False, write_only=True)
     class Meta:
         model = Member
-        fields = '__all__'
+        fields = [
+            "id",
+            "full_name",
+            "email",
+            "mobile_number",
+            "first_name",
+            "last_name",
+            "MbrCountryCode",
+            "MbrStatus",
+            "mbrcardno",
+            "MbrReferalId",
+            "MbrCreatedBy",
+            "card_purposes",
+            "address",
+        ]
+        read_only_fields = ["id", "mbrcardno"]
 
 
 class BusinessSerializer(serializers.ModelSerializer):

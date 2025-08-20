@@ -18,25 +18,30 @@ from collections import defaultdict
 import random
 from member.serializers import JobProfileSerializer
 from member.models import JobProfile
-
+from helpers.pagination import paginate
 
 
 
 class MemberListApi(APIView):
     """
-    API to list all registered members.
+    API to list all registered members (paginated, same format as business list).
     """
     authentication_classes = [UserTokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    @swagger_auto_schema(
-        operation_description="Retrieve a list of all registered members.",
-        responses={200: serializers.MemberDataSerializer(many=True)}
-    )
     def get(self, request):
-        members = Member.objects.all()
-        serializer = serializers.MemberDataSerializer(members, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        members = Member.objects.all().order_by("-id")
+        
+        # Use your custom paginate function
+        page, pagination_meta = paginate(request, members, data_per_page=int(request.GET.get("page_size", 10)))
+
+        serialized_data = serializers.MemberDataSerializer(page, many=True).data
+
+        return Response({
+            "status": 200,
+            "data": serialized_data,
+            "pagination_meta_data": pagination_meta
+        }, status=status.HTTP_200_OK)
     
     
     
@@ -137,19 +142,27 @@ class JobprofileDetailsOfMember(APIView):
 ### ✅ BUSINESS LIST API ###
 class BusinessListApi(APIView):
     """
-    API to list all registered businesses.
+    API to list all registered businesses (paginated, same format as member list).
     """
     authentication_classes = [UserTokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
-        operation_description="Retrieve a list of all registered businesses.",
+        operation_description="Retrieve a paginated list of businesses.",
         responses={200: serializers.BusinessSerializer(many=True)}
     )
     def get(self, request):
-        businesses = Business.objects.filter(is_business=True)
-        serializer = serializers.BusinessSerializer(businesses, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        queryset = Business.objects.filter(is_business=True, is_institute=False).order_by("id")
+
+        # Use the custom paginate helper
+        page, pagination_meta = paginate(request, queryset, data_per_page=int(request.GET.get("page_size", 10)))
+        serialized_data = serializers.BusinessSerializer(page, many=True).data
+
+        return Response({
+            "status": 200,
+            "data": serialized_data,
+            "pagination_meta_data": pagination_meta
+        }, status=200)
     
     
     
