@@ -12,7 +12,7 @@ from django.contrib.auth import logout
 from app_common.serializers import GovernmentUserSerializer
 from django.db.models import Q
 from app_common.email import send_template_email 
-
+from helpers.pagination import paginate
 
 class UserLogoutApi(APIView):
     """
@@ -140,16 +140,26 @@ class InstituteSignupApi(APIView):
     authentication_classes = [UserTokenAuthentication]
     permission_classes = [IsAuthenticated]
     @swagger_auto_schema(
-    operation_description="Get a list of all registered institute businesses.",
-    responses={200: serializers.InstituteListSerializer(many=True)}
+        operation_description="Retrieve a paginated list of registered institutes.",
+        responses={200: serializers.InstituteListSerializer(many=True)}
     )
     def get(self, request):
-        """
-        Returns a list of all registered institutes.
-        """
-        institutes = Business.objects.filter(is_institute=True)
-        serializer = serializers.InstituteListSerializer(institutes, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        queryset = Business.objects.filter(is_institute=True).order_by("-id")
+        
+        # Paginate using custom paginate helper
+        page, pagination_meta = paginate(
+            request,
+            queryset,
+            data_per_page=int(request.GET.get("page_size", 10))
+        )
+
+        serialized_data = serializers.InstituteListSerializer(page, many=True).data
+
+        return Response({
+            "status": 200,
+            "data": serialized_data,
+            "pagination_meta_data": pagination_meta
+        }, status=status.HTTP_200_OK)
     @swagger_auto_schema(
         request_body=serializers.InstituteSignupSerializer
     )
