@@ -122,10 +122,22 @@ class AddJobMitraApi(APIView):
         tags=["Job Mitra"]
     )
     def get(self, request):
-        """Retrieve all job mitra users."""
-        staff_users = User.objects.filter(is_jobmitra=True)
-        serializer = serializers.JobMitraUserListSerializer(staff_users, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        staff_users = User.objects.filter(is_jobmitra=True).order_by("-id")
+        
+        # Use the custom paginate function
+        page, pagination_meta = paginate(
+            request,
+            staff_users,
+            data_per_page=int(request.GET.get("page_size", 10))
+        )
+
+        serialized_data = serializers.JobMitraUserListSerializer(page, many=True).data
+
+        return Response({
+            "status": 200,
+            "data": serialized_data,
+            "pagination_meta_data": pagination_meta
+        }, status=status.HTTP_200_OK)
     
     
 class InstituteSignupApi(APIView):
@@ -314,10 +326,22 @@ class AddGovernmentUserApi(APIView):
         tags=["Government"]
     )
     def get(self, request):
-        users = GovernmentUser.objects.filter(is_government=True, is_active=True)
-        serializer = GovernmentUserSerializer(users, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
+        users = GovernmentUser.objects.filter(is_government=True, is_active=True).order_by("-id")
+        
+        # Use custom paginate function
+        page, pagination_meta = paginate(
+            request,
+            users,
+            data_per_page=int(request.GET.get("page_size", 10))
+        )
+
+        serialized_data = GovernmentUserSerializer(page, many=True).data
+
+        return Response({
+            "status": 200,
+            "data": serialized_data,
+            "pagination_meta_data": pagination_meta
+        }, status=status.HTTP_200_OK)
     
     
     

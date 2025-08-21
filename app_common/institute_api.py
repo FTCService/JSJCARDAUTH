@@ -22,7 +22,7 @@ from .email import send_template_email
 import secrets
 from . import models
 from django.utils import timezone
-
+from helpers.pagination import paginate
 
 
 class AddMemberByInstituteApi(APIView):
@@ -163,16 +163,25 @@ class AddMemberByInstituteApi(APIView):
     )
     def get(self, request):
         """Retrieve all referred members and return total count."""
-
         referal_id = request.user.business_id
-        staff_users = Member.objects.filter(MbrReferalId=referal_id)
-        total_students = staff_users.count()
-        serializer = serializers.JobMitraMemberListSerializer(staff_users, many=True)
+        referred_members = Member.objects.filter(MbrReferalId=referal_id).order_by("-id")
+        total_members = referred_members.count()
+
+        # Pagination
+        page, pagination_meta = paginate(
+            request,
+            referred_members,
+            data_per_page=int(request.GET.get("page_size", 20))
+        )
+
+        serializer = serializers.JobMitraMemberListSerializer(page, many=True)
 
         return Response({
+            "status": 200,
             "success": True,
-            "total_students": total_students,
-            "members": serializer.data
+            "total_members": total_members,
+            "data": serializer.data,
+            "pagination_meta_data": pagination_meta
         }, status=status.HTTP_200_OK)
         
         
