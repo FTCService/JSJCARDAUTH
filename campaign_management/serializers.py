@@ -41,6 +41,9 @@ class GroupSerializer(serializers.ModelSerializer):
         model = Group
         fields = '__all__'
         read_only_fields = ['email', 'mobile_number', 'created_at']
+        
+        
+        
     
 class CampaignSerializer(serializers.ModelSerializer):
     template_id = serializers.PrimaryKeyRelatedField(

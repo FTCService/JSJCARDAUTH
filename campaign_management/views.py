@@ -57,7 +57,7 @@ class GroupAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
-        operation_description="List all groups",
+        operation_description="List all groups with summary statistics",
         responses={200: GroupSerializer(many=True)},
         tags=["campaign_management"]
     )
@@ -65,7 +65,33 @@ class GroupAPIView(APIView):
         try:
             groups = Group.objects.all().order_by("-created_at")
             serializer = GroupSerializer(groups, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+
+            # 📌 Total contacts = sum of all mobile_number lists
+            total_contacts = sum(len(group.mobile_number) for group in groups)
+
+            # 📌 Active groups = groups that have at least 1 contact
+            active_groups = sum(1 for group in groups if len(group.mobile_number) > 0)
+
+            # 📌 Total groups
+            total_groups = groups.count()
+
+            # 📌 Growth rate (Example: Active groups / Total groups * 100)
+            growth_rate = 0
+            if total_groups > 0:
+                growth_rate = round((active_groups / total_groups) * 100, 2)
+
+            response_data = {
+                "summary": {
+                    "total_contacts": total_contacts,
+                    "active_groups": active_groups,
+                    "total_groups": total_groups,
+                    "growth_rate": f"{growth_rate}%",
+                },
+                "data": serializer.data
+            }
+
+            return Response(response_data, status=status.HTTP_200_OK)
+
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
