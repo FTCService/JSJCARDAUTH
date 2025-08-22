@@ -56,7 +56,7 @@ class UserAuthToken(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Business {self.user} - {self.key}"
+        return f"User {self.user} - {self.key}"
 
 class GovernmentUser(AbstractBaseUser):
     email = models.EmailField(unique=True)

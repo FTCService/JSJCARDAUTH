@@ -7,7 +7,7 @@ from django.contrib.auth import authenticate, logout, login
 from drf_yasg.utils import swagger_auto_schema
 from django.contrib.auth.hashers import check_password, make_password
 from helpers.utils import send_otp_to_mobile, send_fast2sms
-from app_common.authentication import MemberAuthBackend, MemberTokenAuthentication
+from app_common.authentication import MemberAuthBackend, MemberTokenAuthentication, UserTokenAuthentication
 from drf_yasg import openapi
 from app_common.models import User, Member,MemberAuthToken
 from . import serializers, models
@@ -93,6 +93,9 @@ class AddStaffApi(APIView):
     """
     API to add a new staff user (Admin Only).
     """
+    authentication_classes = [UserTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
    
 
     @swagger_auto_schema(

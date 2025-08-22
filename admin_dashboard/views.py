@@ -393,6 +393,8 @@ class CardPurposeDetailApi(APIView):
 
 
 class PhysicalCardsListByBusiness(APIView):
+    authentication_classes = [UserTokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_description="Get all physical cards",
@@ -406,6 +408,8 @@ class PhysicalCardsListByBusiness(APIView):
 
 
 class GeneratePhysicalCardsView(APIView):
+    authentication_classes = [UserTokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_description="Get all physical cards",
