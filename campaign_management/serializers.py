@@ -26,21 +26,21 @@ class TemplateSerializer(serializers.ModelSerializer):
         return data
 
 class GroupSerializer(serializers.ModelSerializer):
-    
     email = serializers.ListField(
         child=serializers.EmailField(),
-        read_only=True,
+        required=False,
         help_text="List of email addresses (auto-filled based on group_type)"
     )
     mobile_number = serializers.ListField(
         child=serializers.CharField(),
-        read_only=True,
+        required=False,
         help_text="List of mobile numbers (auto-filled based on group_type)"
     )
+
     class Meta:
         model = Group
         fields = '__all__'
-        read_only_fields = ['email', 'mobile_number', 'created_at']
+        read_only_fields = ['created_at']
         
         
         
@@ -70,14 +70,10 @@ class CampaignSerializer(serializers.ModelSerializer):
             'template_id',
             'group_ids',
             'delivery_option',
-            'scheduled_time',
+            
             'created_at',
             'updated_at',
         ]
 
-    def validate(self, data):
-        delivery_option = data.get('delivery_option')
-        scheduled_time = data.get('scheduled_time')
-        content = data.get('content')
-        template = data.get('template')
+   
 
