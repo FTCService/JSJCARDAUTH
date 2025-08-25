@@ -179,7 +179,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 EVENT_SERVER_URL = env_vars['EVENT_SERVER_URL']
 REWARD_SERVER_URL =env_vars['REWARD_SERVER_URL']
 JOB_SERVER_URL= env_vars['JOB_SERVER_URL']
-#JOB_SERVER_URL =env_vars['JOB_SERVER_URL']
+
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
