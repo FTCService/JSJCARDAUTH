@@ -43,6 +43,7 @@ urlpatterns = [
   path("logout/", staff_api.UserLogoutApi.as_view(), name="logout"),
   
   path("government/users/", staff_api.AddGovernmentUserApi.as_view(), name="government-users"),
+  path("permission-institutes/<int:gov_id>/", staff_api.BulkAssignInstitutesToGovernment.as_view(), name="assign-institutes"),
   
   path("jobmitra/add/member/", job_mitra_api.AddMemberByJobMitraApi.as_view(), name="add-member"),
   path("members/filter/", job_mitra_api.FilteredMemberListApi.as_view(), name="filtered-members"),

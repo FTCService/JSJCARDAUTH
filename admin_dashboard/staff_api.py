@@ -7,6 +7,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from app_common.models import Member,Business,User, UserAuthToken, GovernmentUser
 from . import serializers
+from .models import GovernmentInstituteAccess
 from app_common.authentication import UserTokenAuthentication
 from django.contrib.auth import logout
 from app_common.serializers import GovernmentUserSerializer, MemberSerializer
@@ -407,3 +408,76 @@ class BusinessSearchAPIView(APIView):
             "message": "Matching businesses found.",
             "data": serializer.data
         }, status=status.HTTP_200_OK)
+        
+        
+        
+        
+
+# views.py
+class BulkAssignInstitutesToGovernment(APIView):
+    authentication_classes = [UserTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    @swagger_auto_schema(
+        operation_description="Assign multiple institutes to a government user. (Staff only)",
+        request_body=serializers.BulkAssignInstituteSerializer,
+        responses={
+            201: openapi.Response(
+                description="Institutes assigned successfully",
+                examples={
+                    "application/json": {
+                        "message": "Institutes assigned successfully",
+                        "assigned_count": 2,
+                        "assignments": [
+                            "John Doe -> ABC Institute",
+                            "John Doe -> XYZ Training"
+                        ]
+                    }
+                }
+            ),
+            400: "Invalid data or government user not found",
+            403: "Only staff can assign institutes"
+        },
+        tags=["Government"],
+    )
+    def post(self, request, gov_id):
+        if not request.user.is_staff:
+            return Response({"detail": "Only staff can assign institutes."}, status=403)
+
+        
+        serializer = serializers.BulkAssignInstituteSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
+
+        
+        institute_ids = serializer.validated_data["institutes"]
+
+        try:
+            government_user = GovernmentUser.objects.get(id=gov_id)
+        except GovernmentUser.DoesNotExist:
+            return Response({"detail": "Invalid government user."}, status=400)
+
+        created_assignments = []
+        for institute_id in institute_ids:
+            try:
+                institute = Business.objects.get(business_id=institute_id, is_institute=True)
+                assignment, created = GovernmentInstituteAccess.objects.get_or_create(
+                    government_user=government_user,
+                    institute=institute,
+                    defaults={"assigned_by": request.user}
+                )
+                if created:
+                    created_assignments.append(assignment)
+            except Business.DoesNotExist:
+                continue  # skip invalid institute IDs
+
+        return Response(
+            {
+                "message": "Institutes assigned successfully",
+                "assigned_count": len(created_assignments),
+                "assignments": [
+                    f"{a.government_user.full_name} -> {a.institute.business_name}"
+                    for a in created_assignments
+                ],
+            },
+            status=201
+        )
