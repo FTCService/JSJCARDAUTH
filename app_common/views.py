@@ -606,6 +606,33 @@ class MemberResendOtpApi(APIView):
     
     
     
+class MemberResendOtpApi(APIView):
+    """
+    API to resend OTP to a registered mobile number.
+    """
+    @swagger_auto_schema(request_body=serializers.MemberResendOtpSerializer)
+    def post(self, request):
+        serializer = serializers.MemberResendOtpSerializer(data=request.data)
+
+        if serializer.is_valid():
+            mobile_number = serializer.validated_data["mobile_number"]
+            
+            # Generate a new OTP
+            new_otp = random.randint(100000, 999999)
+
+            # Update OTP in TempUser
+            temp_user = models.TempBusinessUser.objects.filter(mobile_number=mobile_number).first()
+            temp_user.otp = new_otp
+            temp_user.save()
+
+            # Send OTP to user
+            send_otp_to_mobile({"mobile_number": mobile_number, "otp": new_otp})
+
+            return Response({"message": "OTP resent successfully.", "mobile_number": mobile_number}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
 class MemberDetailsByMobileAPI(APIView):
     def get(self, request):
         mobile = request.GET.get("mobile_number")
