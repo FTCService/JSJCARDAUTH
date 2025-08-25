@@ -318,3 +318,9 @@ class JobMitraMemberListSerializer(serializers.ModelSerializer):
 
 
 
+
+class BulkAssignInstituteSerializer(serializers.Serializer):
+    institutes = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_empty=False
+    )

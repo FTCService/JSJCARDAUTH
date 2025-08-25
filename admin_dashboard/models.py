@@ -1,5 +1,5 @@
 from django.db import models
-
+from app_common.models import Business, GovernmentUser, User
 class CardPurpose(models.Model):
     PURPOSE_CHOICES = [
         ('consumer', 'Consumer Card'),
@@ -62,3 +62,14 @@ class JobProfileField(models.Model):
             "option": self.option,
         }
     
+    
+
+# models.py
+class GovernmentInstituteAccess(models.Model):
+    government_user = models.ForeignKey(GovernmentUser,on_delete=models.CASCADE,related_name="assigned_institutes")
+    institute = models.ForeignKey(Business,on_delete=models.CASCADE,related_name="assigned_governments")
+    assigned_by = models.ForeignKey(User, on_delete=models.SET_NULL,null=True,blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.government_user.full_name} -> {self.institute.business_name}"
