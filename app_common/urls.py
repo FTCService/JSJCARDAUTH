@@ -30,6 +30,7 @@ urlpatterns = [
 
     path("business/signup/", business_api.BusinessSignupApi.as_view(), name="business-signup"),
     path("business/verify/otp/", business_api.BusinessVerifyOtpApi.as_view(), name="business-verify-otp"),
+    path("business/resend/otp/", views.MemberResendOtpApi.as_view(), name="business-resend-otp"),
     path("business/login/", business_api.BusinessLoginApi.as_view(), name="business-login"),
     path("business/forgot-pin/", business_api.BusinessForgotPinAPI.as_view(), name="business-forgot-pin"),
     path("business/reset-pin/", business_api.BusinessResetPinAPI.as_view(), name="business-reset-pin"),

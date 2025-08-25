@@ -186,22 +186,13 @@ class TempBusinessUser(models.Model):
         
 ### 🔹 BUSINESS MODEL ###
 class Business(AbstractBaseUser, PermissionsMixin):
-    BUSINESS_TYPE_CHOICES = [
-        ("Retail", "Retail"),
-        ("Food", "Food"),
-        ("Health", "Health"),
-        ("Technology", "Technology"),
-        ("Finance", "Finance"),
-        ("Education", "Education"),
-        ("Others", "Others"),
-    ]
     
     business_id = models.CharField(max_length=6, unique=True, editable=False, blank=True)
     email = models.EmailField(unique=True, null=True, blank=True)
     mobile_number = models.CharField(max_length=15, unique=True, null=True, blank=True) 
     pin = models.CharField(max_length=128, null=True, blank=True)  
     business_name = models.CharField(max_length=55, null=True, blank=True)
-    business_type = models.CharField(max_length=100 ,choices=BUSINESS_TYPE_CHOICES, null=True, blank=True)  
+    business_type = models.CharField(max_length=100 , null=True, blank=True)  
     otp = models.CharField(max_length=6, null=True, blank=True)  
 
     business_country_code = models.CharField(
