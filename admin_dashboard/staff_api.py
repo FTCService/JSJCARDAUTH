@@ -9,7 +9,7 @@ from app_common.models import Member,Business,User, UserAuthToken, GovernmentUse
 from . import serializers
 from app_common.authentication import UserTokenAuthentication
 from django.contrib.auth import logout
-from app_common.serializers import GovernmentUserSerializer
+from app_common.serializers import GovernmentUserSerializer, MemberSerializer
 from django.db.models import Q
 from app_common.email import send_template_email 
 from helpers.pagination import paginate
@@ -258,7 +258,7 @@ class InstitutedetailsApi(APIView):
 
             # Count and serialize
             member_count = referred_members.count()
-            member_data = serializers.MemberSerializer(referred_members, many=True).data
+            member_data = MemberSerializer(referred_members, many=True).data
 
             # Serialize institute
             serializer = serializers.InstituteUpdateSerializer(business)
