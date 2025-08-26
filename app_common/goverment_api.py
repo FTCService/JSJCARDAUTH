@@ -14,7 +14,7 @@ from .authentication import GovernmentTokenAuthentication
 from django.contrib.auth.hashers import check_password, make_password
 import requests
 from django.conf import settings
-
+from admin_dashboard.models import GovernmentInstituteAccess
 
 
 class GovermentLoginApi(APIView):
@@ -145,7 +145,7 @@ class BusinessSummaryAPIView(APIView):
     def get(self, request):
         try:
             # Institutes
-            institutes = models.Business.objects.filter(is_institute=True).count()
+            institutes = GovernmentInstituteAccess.objects.all().count()
            
             # Companies
             companies = models.Business.objects.filter(is_business=True, is_institute=False).count()
