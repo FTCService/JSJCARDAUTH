@@ -48,13 +48,13 @@ class AddMemberByInstituteApi(APIView):
         if Member.objects.filter(email=email).exists():
             return Response({
                 "success": False,
-                "message": "member this email already exits kindly go profile page to update the profile page"
+                "message": "This mobile number or email is already registered. Please update your details on the profile page."
             }, status=status.HTTP_200_OK)
 
         if Member.objects.filter(mobile_number=mobile_number).exists():
             return Response({
                 "success": False,
-                "message": "member this mobile number already exits kindly go profile page to update the profile page."
+                "message": "This mobile number or email is already registered. Please update your details on the profile page."
             }, status=status.HTTP_200_OK)
 
         # Now validate the rest

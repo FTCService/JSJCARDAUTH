@@ -65,6 +65,7 @@ urlpatterns = [
     path("institute/list/", goverment_api.InstituteListgovernmentApi.as_view(), name="institute-list"),
     
     path("student/list/", goverment_api.StudentListgovernmentApi.as_view(), name="student-list"),
+    path("student/list/<int:business_id>/", goverment_api.StudentListOfInstituteApi.as_view(), name="student-list"),
 
     
     path("institute/add/member/", institute_api.AddMemberByInstituteApi.as_view(), name="institute-add-member"),

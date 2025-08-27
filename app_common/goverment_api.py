@@ -251,3 +251,19 @@ class StudentListgovernmentApi(APIView):
     
 
     
+class StudentListOfInstituteApi(APIView):
+    """
+    API to list all registered members.
+    """
+    authentication_classes = [GovernmentTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="Retrieve a list of all registered members.",
+        responses={200: serializers.MemberListSerializer(many=True)},
+        tags=["Government"]
+    )
+    def get(self, request, business_id):
+        members = models.Member.objects.filter(MbrReferalId=business_id)
+        serializer = serializers.MemberListSerializer(members, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
