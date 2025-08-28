@@ -7,7 +7,7 @@ from django.contrib.auth import authenticate, logout, login
 from drf_yasg.utils import swagger_auto_schema
 from django.contrib.auth.hashers import check_password, make_password
 from helpers.utils import send_otp_to_mobile, send_fast2sms
-from app_common.authentication import MemberAuthBackend, MemberTokenAuthentication
+from app_common.authentication import MemberAuthBackend, MemberTokenAuthentication, UserTokenAuthentication
 from drf_yasg import openapi
 from app_common.models import User, Member,MemberAuthToken
 from . import serializers, models
@@ -93,6 +93,9 @@ class AddStaffApi(APIView):
     """
     API to add a new staff user (Admin Only).
     """
+    authentication_classes = [UserTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
    
 
     @swagger_auto_schema(
@@ -603,6 +606,33 @@ class MemberResendOtpApi(APIView):
     
     
     
+class MemberResendOtpApi(APIView):
+    """
+    API to resend OTP to a registered mobile number.
+    """
+    @swagger_auto_schema(request_body=serializers.MemberResendOtpSerializer)
+    def post(self, request):
+        serializer = serializers.MemberResendOtpSerializer(data=request.data)
+
+        if serializer.is_valid():
+            mobile_number = serializer.validated_data["mobile_number"]
+            
+            # Generate a new OTP
+            new_otp = random.randint(100000, 999999)
+
+            # Update OTP in TempUser
+            temp_user = models.TempBusinessUser.objects.filter(mobile_number=mobile_number).first()
+            temp_user.otp = new_otp
+            temp_user.save()
+
+            # Send OTP to user
+            send_otp_to_mobile({"mobile_number": mobile_number, "otp": new_otp})
+
+            return Response({"message": "OTP resent successfully.", "mobile_number": mobile_number}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
 class MemberDetailsByMobileAPI(APIView):
     def get(self, request):
         mobile = request.GET.get("mobile_number")
@@ -733,4 +763,173 @@ class VerifyAdminStaffTokenApi(APIView):
             })
         except models.UserAuthToken.DoesNotExist:
             return Response({"valid": False, "detail": "Invalid or expired token."}, status=status.HTTP_401_UNAUTHORIZED)
-        
+    
+    
+    
+    
+# class GetPrimaryCardAPIView(APIView):
+#     """
+#     Resolve a card number to its primary card number for a given business.
+#     Handles mapped secondary cards and direct primary cards.
+#     """
+
+#     def get(self, request):
+#         card_number = request.query_params.get("card_number")
+#         business_id = request.query_params.get("business_id")
+
+#         # 1. Validate inputs
+#         if not card_number or not business_id:
+#             return Response(
+#                 {"success": False, "message": "card_number and business_id are required"},
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
+
+#         try:
+#             card_number = int(card_number)
+#             business_id = int(business_id)
+#         except ValueError:
+#             return Response(
+#                 {"success": False, "message": "card_number and business_id must be integers"},
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
+
+#         # 2. Check in CardMapper table (secondary → primary mapping)
+#         mapping = models.CardMapper.objects.filter(
+#             secondary_card=card_number,
+#             business_id=business_id
+#         ).select_related("primary_card").first()
+
+#         if mapping:
+#             return Response({
+#                 "success": True,
+#                 "primary_card_number": mapping.primary_card.mbrcardno,
+#                 "is_associated": True,
+#                 "message": "Mapped secondary card resolved to primary."
+#             }, status=status.HTTP_200_OK)
+
+#         # 3. Check if the card is itself a primary card for this business
+#         primary_member = Member.objects.filter(
+#             mbrcardno=card_number
+#         ).first()
+
+#         if primary_member:
+#             return Response({
+#                 "success": True,
+#                 "primary_card_number": primary_member.mbrcardno,
+#                 "is_associated": True,
+#                 "message": "Primary card is directly associated with business."
+#             }, status=status.HTTP_200_OK)
+
+#         # 4. Check if it exists as a PhysicalCard for this business (but not mapped)
+#         physical_card = models.PhysicalCard.objects.filter(
+#             card_number=card_number,
+#             business__business_id=business_id
+#         ).first()
+#         if physical_card:
+#             return Response({
+#                 "success": False,
+#                 "primary_card_number": card_number,
+#                 "is_associated": False,
+#                 "message": "Physical card exists but not mapped to a member."
+#             }, status=status.HTTP_200_OK)
+
+#         # 5. Card not found at all
+#         return Response({
+#             "success": False,
+#             "primary_card_number": None,
+#             "is_associated": False,
+#             "message": "Card is not associated with this business."
+#         }, status=status.HTTP_200_OK)
+
+
+
+class GetPrimaryCardAPIView(APIView):
+    """
+    Resolve a card number to its primary card number for a given business.
+    Handles mapped secondary cards, direct primary cards,
+    and detects cards belonging to another business.
+    """
+
+    def get(self, request):
+        card_number = request.query_params.get("card_number")
+        business_id = request.query_params.get("business_id")
+
+        # 1. Validate inputs
+        if not card_number or not business_id:
+            return Response(
+                {"success": False, "message": "card_number and business_id are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            card_number = int(card_number)
+            business_id = int(business_id)
+        except ValueError:
+            return Response(
+                {"success": False, "message": "card_number and business_id must be integers"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 2. Check in CardMapper table (secondary → primary mapping)
+        mapping = models.CardMapper.objects.filter(
+            secondary_card=card_number,
+            business_id=business_id
+        ).select_related("primary_card").first()
+
+        if mapping:
+            return Response({
+                "success": True,
+                "primary_card_number": mapping.primary_card.mbrcardno,
+                "secondary_card_number": mapping.secondary_card,  # ✅ include this
+                "is_associated": True,
+                "message": "Mapped secondary card resolved to primary."
+            }, status=status.HTTP_200_OK)
+
+        # 3. Check if the card is itself a primary card for this business
+        primary_member = Member.objects.filter(
+            mbrcardno=card_number
+        ).first()
+
+        if primary_member:
+            return Response({
+                "success": True,
+                "primary_card_number": primary_member.mbrcardno,
+                "is_associated": True,
+                "message": "Primary card is directly associated with business."
+            }, status=status.HTTP_200_OK)
+
+        # 4. Check if it exists as a PhysicalCard for *this* business
+        physical_card = models.PhysicalCard.objects.filter(
+            card_number=card_number,
+            business__business_id=business_id
+        ).first()
+        if physical_card:
+            return Response({
+                "success": False,
+                "primary_card_number": card_number,
+                "is_associated": False,
+                "message": "Physical card exists but not mapped to a member."
+            }, status=status.HTTP_200_OK)
+
+        # 5. Check if the physical card exists for *another* business
+        other_business_card = models.PhysicalCard.objects.filter(
+            card_number=card_number
+        ).exclude(business__business_id=business_id).select_related("business").first()
+
+        if other_business_card:
+            return Response({
+                "success": False,
+                "primary_card_number": card_number,
+                "is_associated": False,
+                "message": "This card belongs to another business.",
+                "other_business_id": other_business_card.business.business_id,
+                "other_business_name": getattr(other_business_card.business, "name", None)
+            }, status=status.HTTP_200_OK)
+
+        # 6. Card not found at all
+        return Response({
+            "success": False,
+            "primary_card_number": None,
+            "is_associated": False,
+            "message": "Card is not registered in the system."
+        }, status=status.HTTP_200_OK)

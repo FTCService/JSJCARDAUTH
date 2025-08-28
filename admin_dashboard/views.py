@@ -18,25 +18,30 @@ from collections import defaultdict
 import random
 from member.serializers import JobProfileSerializer
 from member.models import JobProfile
-
+from helpers.pagination import paginate
 
 
 
 class MemberListApi(APIView):
     """
-    API to list all registered members.
+    API to list all registered members (paginated, same format as business list).
     """
     authentication_classes = [UserTokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    @swagger_auto_schema(
-        operation_description="Retrieve a list of all registered members.",
-        responses={200: serializers.MemberSerializer(many=True)}
-    )
     def get(self, request):
-        members = Member.objects.all()
-        serializer = serializers.MemberSerializer(members, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        members = Member.objects.all().order_by("-id")
+        
+        # Use your custom paginate function
+        page, pagination_meta = paginate(request, members, data_per_page=int(request.GET.get("page_size", 10)))
+
+        serialized_data = serializers.MemberDataSerializer(page, many=True).data
+
+        return Response({
+            "status": 200,
+            "data": serialized_data,
+            "pagination_meta_data": pagination_meta
+        }, status=status.HTTP_200_OK)
     
     
     
@@ -49,7 +54,7 @@ class MemberDetailApi(APIView):
 
     @swagger_auto_schema(
         operation_description="Retrieve details of a specific member.",
-        responses={200: serializers.MemberSerializer()}
+        responses={200: serializers.MemberDataSerializer()}
     )
     def get(self, request, pk):
        
@@ -58,15 +63,15 @@ class MemberDetailApi(APIView):
         """
         try:
             member = Member.objects.get(pk=pk)
-            serializer = serializers.MemberSerializer(member)
+            serializer = serializers.MemberDataSerializer(member)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Member.DoesNotExist:
             return Response({"error": "Member not found"}, status=status.HTTP_404_NOT_FOUND)
         
     @swagger_auto_schema(
         operation_description="Update the details of a specific member.",
-        request_body=serializers.MemberSerializer(),
-        responses={200: serializers.MemberSerializer(), 400: "Bad request"}
+        request_body=serializers.MemberDataSerializer(),
+        responses={200: serializers.MemberDataSerializer(), 400: "Bad request"}
     )
     def put(self, request, pk):
         """
@@ -78,7 +83,7 @@ class MemberDetailApi(APIView):
             return Response({"error": "Member not found"}, status=status.HTTP_404_NOT_FOUND)
 
         # Deserialize the request data into the Member model instance
-        serializer = serializers.MemberSerializer(member, data=request.data, partial=False)
+        serializer = serializers.MemberDataSerializer(member, data=request.data, partial=False)
         
         if serializer.is_valid():
             serializer.save()
@@ -137,19 +142,27 @@ class JobprofileDetailsOfMember(APIView):
 ### ✅ BUSINESS LIST API ###
 class BusinessListApi(APIView):
     """
-    API to list all registered businesses.
+    API to list all registered businesses (paginated, same format as member list).
     """
     authentication_classes = [UserTokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
-        operation_description="Retrieve a list of all registered businesses.",
+        operation_description="Retrieve a paginated list of businesses.",
         responses={200: serializers.BusinessSerializer(many=True)}
     )
     def get(self, request):
-        businesses = Business.objects.filter(is_business=True)
-        serializer = serializers.BusinessSerializer(businesses, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        queryset = Business.objects.filter(is_business=True, is_institute=False).order_by("id")
+
+        # Use the custom paginate helper
+        page, pagination_meta = paginate(request, queryset, data_per_page=int(request.GET.get("page_size", 10)))
+        serialized_data = serializers.BusinessSerializer(page, many=True).data
+
+        return Response({
+            "status": 200,
+            "data": serialized_data,
+            "pagination_meta_data": pagination_meta
+        }, status=200)
     
     
     
@@ -380,6 +393,8 @@ class CardPurposeDetailApi(APIView):
 
 
 class PhysicalCardsListByBusiness(APIView):
+    authentication_classes = [UserTokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_description="Get all physical cards",
@@ -393,6 +408,8 @@ class PhysicalCardsListByBusiness(APIView):
 
 
 class GeneratePhysicalCardsView(APIView):
+    authentication_classes = [UserTokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
         operation_description="Get all physical cards",

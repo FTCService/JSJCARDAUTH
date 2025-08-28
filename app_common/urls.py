@@ -30,6 +30,7 @@ urlpatterns = [
 
     path("business/signup/", business_api.BusinessSignupApi.as_view(), name="business-signup"),
     path("business/verify/otp/", business_api.BusinessVerifyOtpApi.as_view(), name="business-verify-otp"),
+    path("business/resend/otp/", views.MemberResendOtpApi.as_view(), name="business-resend-otp"),
     path("business/login/", business_api.BusinessLoginApi.as_view(), name="business-login"),
     path("business/forgot-pin/", business_api.BusinessForgotPinAPI.as_view(), name="business-forgot-pin"),
     path("business/reset-pin/", business_api.BusinessResetPinAPI.as_view(), name="business-reset-pin"),
@@ -44,7 +45,7 @@ urlpatterns = [
     path('verify-token/', business_api.VerifyBusinessTokenApi.as_view(), name='verify-token'),
     path('member-details/', views.MemberDetailsByMobileAPI.as_view(), name='member-details'),
     path('cardno/member-details/', views.MemberDetailsByCardNoAPI.as_view(), name='by-cardno-member-details'),
-    
+    path('member-exists/', business_api.MemberExitsApi.as_view(), name='member-exists'),
     path('initiate-card-assignment/', business_api.InitiateCardAssignmentView.as_view(), name="initiate-card-assignment"),
     path('card-mappings/list/', business_api.AllCardMappingsByBusiness.as_view(), name='business-card-mappings'),
     
@@ -64,6 +65,7 @@ urlpatterns = [
     path("institute/list/", goverment_api.InstituteListgovernmentApi.as_view(), name="institute-list"),
     
     path("student/list/", goverment_api.StudentListgovernmentApi.as_view(), name="student-list"),
+    path("student/list/<int:business_id>/", goverment_api.StudentListOfInstituteApi.as_view(), name="student-list"),
 
     
     path("institute/add/member/", institute_api.AddMemberByInstituteApi.as_view(), name="institute-add-member"),
@@ -71,6 +73,7 @@ urlpatterns = [
     
     path("public/member/register/", institute_api.PublicMemberRegisterAPI.as_view(), name="public-member-register"),
    
+    path("get-primary-card/", views.GetPrimaryCardAPIView.as_view(), name="get-primary-card"),
 
 ]
 

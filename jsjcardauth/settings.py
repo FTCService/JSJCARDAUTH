@@ -113,7 +113,7 @@ DATABASES = {
         "NAME": env_vars["DB_NAME"],
         "USER": env_vars["DB_USER"],
         "PASSWORD": env_vars["DB_PASSWORD"],
-        "HOST": "jsjcardtest.cl42kik08yj6.ap-south-1.rds.amazonaws.com",
+        "HOST": env_vars["DB_HOST"],
         "PORT": "5432",
     }
 }
@@ -176,10 +176,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # cros origin 
 CORS_ALLOW_ALL_ORIGINS = True
 
-
+EVENT_SERVER_URL = env_vars['EVENT_SERVER_URL']
 REWARD_SERVER_URL =env_vars['REWARD_SERVER_URL']
+JOB_SERVER_URL= env_vars['JOB_SERVER_URL']
 
-#JOB_SERVER_URL =env_vars['JOB_SERVER_URL']
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

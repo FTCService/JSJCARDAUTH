@@ -10,11 +10,25 @@ class BusinessShortSerializer(serializers.ModelSerializer):
         model = Business
         fields = ['business_id', 'business_name']
 
-class MemberSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(required=False, write_only=True)
+class MemberDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
-        fields = '__all__'
+        fields = [
+            "id",
+            "full_name",
+            "email",
+            "mobile_number",
+            "first_name",
+            "last_name",
+            "MbrCountryCode",
+            "MbrStatus",
+            "mbrcardno",
+            "MbrReferalId",
+            "MbrCreatedBy",
+            "card_purposes",
+            "address",
+        ]
+        read_only_fields = ["id", "mbrcardno"]
 
 
 class BusinessSerializer(serializers.ModelSerializer):
@@ -304,3 +318,9 @@ class JobMitraMemberListSerializer(serializers.ModelSerializer):
 
 
 
+
+class BulkAssignInstituteSerializer(serializers.Serializer):
+    institutes = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_empty=False
+    )

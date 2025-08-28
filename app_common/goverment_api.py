@@ -14,7 +14,7 @@ from .authentication import GovernmentTokenAuthentication
 from django.contrib.auth.hashers import check_password, make_password
 import requests
 from django.conf import settings
-
+from admin_dashboard.models import GovernmentInstituteAccess
 
 
 class GovermentLoginApi(APIView):
@@ -145,7 +145,7 @@ class BusinessSummaryAPIView(APIView):
     def get(self, request):
         try:
             # Institutes
-            institutes = models.Business.objects.filter(is_institute=True).count()
+            institutes = GovernmentInstituteAccess.objects.all().count()
            
             # Companies
             companies = models.Business.objects.filter(is_business=True, is_institute=False).count()
@@ -216,8 +216,16 @@ class InstituteListgovernmentApi(APIView):
         tags=["Government"]
     )
     def get(self, request):
-        businesses = models.Business.objects.filter(is_institute=True)
-        serializer = serializers.BusinessListSerializer(businesses, many=True)
+        # request.user is already a GovernmentUser because of GovernmentTokenAuthentication
+        government_user = request.user  
+
+        # Filter institutes assigned to this government user
+        permitted_institutes = models.Business.objects.filter(
+            is_institute=True,
+            assigned_governments__government_user=government_user
+        )
+
+        serializer = serializers.BusinessListSerializer(permitted_institutes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -243,3 +251,19 @@ class StudentListgovernmentApi(APIView):
     
 
     
+class StudentListOfInstituteApi(APIView):
+    """
+    API to list all registered members.
+    """
+    authentication_classes = [GovernmentTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="Retrieve a list of all registered members.",
+        responses={200: serializers.MemberListSerializer(many=True)},
+        tags=["Government"]
+    )
+    def get(self, request, business_id):
+        members = models.Member.objects.filter(MbrReferalId=business_id)
+        serializer = serializers.MemberListSerializer(members, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

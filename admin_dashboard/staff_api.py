@@ -7,12 +7,13 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from app_common.models import Member,Business,User, UserAuthToken, GovernmentUser
 from . import serializers
+from .models import GovernmentInstituteAccess
 from app_common.authentication import UserTokenAuthentication
 from django.contrib.auth import logout
-from app_common.serializers import GovernmentUserSerializer
+from app_common.serializers import GovernmentUserSerializer, MemberSerializer
 from django.db.models import Q
 from app_common.email import send_template_email 
-
+from helpers.pagination import paginate
 
 class UserLogoutApi(APIView):
     """
@@ -122,10 +123,22 @@ class AddJobMitraApi(APIView):
         tags=["Job Mitra"]
     )
     def get(self, request):
-        """Retrieve all job mitra users."""
-        staff_users = User.objects.filter(is_jobmitra=True)
-        serializer = serializers.JobMitraUserListSerializer(staff_users, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        staff_users = User.objects.filter(is_jobmitra=True).order_by("-id")
+        
+        # Use the custom paginate function
+        page, pagination_meta = paginate(
+            request,
+            staff_users,
+            data_per_page=int(request.GET.get("page_size", 10))
+        )
+
+        serialized_data = serializers.JobMitraUserListSerializer(page, many=True).data
+
+        return Response({
+            "status": 200,
+            "data": serialized_data,
+            "pagination_meta_data": pagination_meta
+        }, status=status.HTTP_200_OK)
     
     
 class InstituteSignupApi(APIView):
@@ -140,16 +153,26 @@ class InstituteSignupApi(APIView):
     authentication_classes = [UserTokenAuthentication]
     permission_classes = [IsAuthenticated]
     @swagger_auto_schema(
-    operation_description="Get a list of all registered institute businesses.",
-    responses={200: serializers.InstituteListSerializer(many=True)}
+        operation_description="Retrieve a paginated list of registered institutes.",
+        responses={200: serializers.InstituteListSerializer(many=True)}
     )
     def get(self, request):
-        """
-        Returns a list of all registered institutes.
-        """
-        institutes = Business.objects.filter(is_institute=True)
-        serializer = serializers.InstituteListSerializer(institutes, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        queryset = Business.objects.filter(is_institute=True).order_by("-id")
+        
+        # Paginate using custom paginate helper
+        page, pagination_meta = paginate(
+            request,
+            queryset,
+            data_per_page=int(request.GET.get("page_size", 10))
+        )
+
+        serialized_data = serializers.InstituteListSerializer(page, many=True).data
+
+        return Response({
+            "status": 200,
+            "data": serialized_data,
+            "pagination_meta_data": pagination_meta
+        }, status=status.HTTP_200_OK)
     @swagger_auto_schema(
         request_body=serializers.InstituteSignupSerializer
     )
@@ -236,7 +259,7 @@ class InstitutedetailsApi(APIView):
 
             # Count and serialize
             member_count = referred_members.count()
-            member_data = serializers.MemberSerializer(referred_members, many=True).data
+            member_data = MemberSerializer(referred_members, many=True).data
 
             # Serialize institute
             serializer = serializers.InstituteUpdateSerializer(business)
@@ -304,10 +327,22 @@ class AddGovernmentUserApi(APIView):
         tags=["Government"]
     )
     def get(self, request):
-        users = GovernmentUser.objects.filter(is_government=True, is_active=True)
-        serializer = GovernmentUserSerializer(users, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
+        users = GovernmentUser.objects.filter(is_government=True, is_active=True).order_by("-id")
+        
+        # Use custom paginate function
+        page, pagination_meta = paginate(
+            request,
+            users,
+            data_per_page=int(request.GET.get("page_size", 10))
+        )
+
+        serialized_data = GovernmentUserSerializer(page, many=True).data
+
+        return Response({
+            "status": 200,
+            "data": serialized_data,
+            "pagination_meta_data": pagination_meta
+        }, status=status.HTTP_200_OK)
     
     
     
@@ -373,3 +408,76 @@ class BusinessSearchAPIView(APIView):
             "message": "Matching businesses found.",
             "data": serializer.data
         }, status=status.HTTP_200_OK)
+        
+        
+        
+        
+
+# views.py
+class BulkAssignInstitutesToGovernment(APIView):
+    authentication_classes = [UserTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    @swagger_auto_schema(
+        operation_description="Assign multiple institutes to a government user. (Staff only)",
+        request_body=serializers.BulkAssignInstituteSerializer,
+        responses={
+            201: openapi.Response(
+                description="Institutes assigned successfully",
+                examples={
+                    "application/json": {
+                        "message": "Institutes assigned successfully",
+                        "assigned_count": 2,
+                        "assignments": [
+                            "John Doe -> ABC Institute",
+                            "John Doe -> XYZ Training"
+                        ]
+                    }
+                }
+            ),
+            400: "Invalid data or government user not found",
+            403: "Only staff can assign institutes"
+        },
+        tags=["Government"],
+    )
+    def post(self, request, gov_id):
+        if not request.user.is_staff:
+            return Response({"detail": "Only staff can assign institutes."}, status=403)
+
+        
+        serializer = serializers.BulkAssignInstituteSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
+
+        
+        institute_ids = serializer.validated_data["institutes"]
+
+        try:
+            government_user = GovernmentUser.objects.get(id=gov_id)
+        except GovernmentUser.DoesNotExist:
+            return Response({"detail": "Invalid government user."}, status=400)
+
+        created_assignments = []
+        for institute_id in institute_ids:
+            try:
+                institute = Business.objects.get(business_id=institute_id, is_institute=True)
+                assignment, created = GovernmentInstituteAccess.objects.get_or_create(
+                    government_user=government_user,
+                    institute=institute,
+                    defaults={"assigned_by": request.user}
+                )
+                if created:
+                    created_assignments.append(assignment)
+            except Business.DoesNotExist:
+                continue  # skip invalid institute IDs
+
+        return Response(
+            {
+                "message": "Institutes assigned successfully",
+                "assigned_count": len(created_assignments),
+                "assignments": [
+                    f"{a.government_user.full_name} -> {a.institute.business_name}"
+                    for a in created_assignments
+                ],
+            },
+            status=201
+        )

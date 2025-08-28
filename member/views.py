@@ -19,6 +19,38 @@ from django.utils import timezone
 from django.db.models import Q
 
 
+class RemoteJobprofileOfMember(APIView):
+    """API to get all categories with their fields formatted as key-value pairs."""
+    
+    @swagger_auto_schema(
+        responses={200: JobProfileSerializer()},
+        tags=["Job Profile Management"]
+    )
+    def get(self, request):
+        """Retrieve the logged-in user's job profile"""
+        card_number = request.query_params.get('card_number', None)
+        
+        # try:
+           
+           
+        job_profile = JobProfile.objects.get(MbrCardNo=card_number)
+        
+        serializer = JobProfileSerializer(job_profile)
+        
+        response_data = serializer.data
+       
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+        # except Member.DoesNotExist:
+        #     return Response({"error": "Member not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # except JobProfile.DoesNotExist:
+        #     return Response({"error": "Job Profile Not Found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+
 class JobProfileAPI(APIView):
     authentication_classes = [MemberTokenAuthentication]
     permission_classes = [IsAuthenticated]

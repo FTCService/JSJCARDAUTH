@@ -16,6 +16,9 @@ from django.contrib.auth.hashers import check_password, make_password
 from app_common.models import Business, BusinessKyc
 import csv, io
 from app_common.email import send_template_email
+from admin_dashboard.models import CardPurpose
+from member.models import JobProfile
+from member.serializers import JobProfileSerializer
 
 
 class BulkBusinessUploadView(APIView):
@@ -567,7 +570,7 @@ class InitiateCardAssignmentView(APIView):
             # Check if physical card exists and is not already issued
             physical_card_qs = models.PhysicalCard.objects.filter(card_number=card_number, business=business.business_id)
             if not physical_card_qs.exists():
-                return Response({"message": "Card not found."}, status=status.HTTP_200_OK)
+                return Response({"success":False,"message": "To activate this card for in-store use, please contact our customer support team at +91 8926600880. We're ready to assist you."}, status=status.HTTP_400_BAD_REQUEST)
 
             physical_card = physical_card_qs.first()
 
@@ -576,6 +579,7 @@ class InitiateCardAssignmentView(APIView):
             if card_mapper_qs.exists():
                 existing_mapping = card_mapper_qs.first()
                 return Response({
+                    "success": False,
                     "message": "Card already issued.",
                     "mbrcardno": existing_mapping.primary_card.mbrcardno
                 }, status=status.HTTP_200_OK)
@@ -596,6 +600,7 @@ class InitiateCardAssignmentView(APIView):
                 physical_card.save()
 
                 return Response({
+                    "success": True,
                     "message": "Existing member found. Secondary card assigned.",
                     "mbrcardno": member.mbrcardno,
                 }, status=status.HTTP_200_OK)
@@ -619,6 +624,7 @@ class InitiateCardAssignmentView(APIView):
                 physical_card.save()
 
                 return Response({
+                    "success": True,
                     "message": "New member created and card assigned.",
                     "mbrcardno": new_member.mbrcardno
                 }, status=status.HTTP_200_OK)
@@ -662,3 +668,250 @@ class PhysicalCardsByBusinessID(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     
+
+class MemberExitsApi(APIView):
+    authentication_classes = [BusinessTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="Check if a member exists in the business and return their details",
+        manual_parameters=[
+            openapi.Parameter(
+                'mobile_number',
+                openapi.IN_QUERY,
+                description="Mobile number of the member",
+                type=openapi.TYPE_STRING,
+                required=True
+            )
+        ],
+        responses={
+            200: openapi.Response(
+                description="Member exists and details are returned",
+                schema=serializers.MemberSerializer()
+            ),
+            404: openapi.Response(
+                description="Member not found",
+                schema=serializers.MemberExistenceSerializer()
+            )
+        }
+    )
+    def get(self, request):
+        mobile_number = request.GET.get("mobile_number")
+        if not mobile_number:
+            return Response(
+                {"success": False, "message": "Mobile number is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            member = models.Member.objects.get(mobile_number=mobile_number)
+        except models.Member.DoesNotExist:
+            return Response(
+                {"success": False,"is_present":False, "message": "Member does not exist."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = serializers.MemberSerializer(member)
+        return Response(
+            {"success": True,"is_present":True, "data": serializer.data},
+            status=status.HTTP_200_OK
+        )
+        
+
+
+
+import os
+import requests
+class AddMemberBybusinessEntrypassApi(APIView):
+    """
+    API to add a new member user for entry pass and auto-register them to an event.
+    """
+    authentication_classes = [BusinessTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        request_body=serializers.EntryPassMemberSerializer,
+        tags=["Institute"]
+    )
+    def post(self, request):
+        referal_id = request.user.business_id
+        data = request.data
+
+        # Validate event_id in request
+        event_id = data.get("event_id")
+        if not event_id:
+            return Response(
+                {"success": False, "message": "event_id is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # ✅ Check for duplicate email or mobile
+        email = data.get("email")
+        mobile_number = data.get("mobile_number")
+
+        if models.Member.objects.filter(email=email).exists():
+            return Response({"success": False, "message": "Member with this email already exists."}, status=status.HTTP_200_OK)
+
+        if models.Member.objects.filter(mobile_number=mobile_number).exists():
+            return Response({"success": False, "message": "Member with this mobile number already exists."}, status=status.HTTP_200_OK)
+
+        # Validate input data
+        serializer = serializers.EntryPassMemberSerializer(data=data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        # Extract validated fields
+        full_name = serializer.validated_data["full_name"]
+        email = serializer.validated_data["email"]
+        pin = serializer.validated_data["pin"]
+        mobile_number = serializer.validated_data["mobile_number"]
+
+        # ✅ Create member
+        user = models.Member.objects.create(
+            email=email,
+            pin=make_password(pin),
+            full_name=full_name,
+            mobile_number=mobile_number,
+            MbrReferalId=referal_id,
+        )
+
+        try:
+            business = models.Business.objects.get(business_id=referal_id)
+        except models.Business.DoesNotExist:
+            return Response({"error": "Invalid Referral ID"}, status=status.HTTP_404_NOT_FOUND)
+
+        # ✅ Handle multiple purposes
+        purposes_data = request.data.get("card_purposes", [{"purpose": "consumer", "features": ["Reward"]}])
+        final_purpose_list = []
+        for entry in purposes_data:
+            purpose_name = entry.get("purpose", "consumer")
+            features = entry.get("features", [])
+            purpose_obj = CardPurpose.objects.filter(purpose_name=purpose_name).first()
+            if purpose_obj:
+                final_purpose_list.append({
+                    "id": purpose_obj.id,
+                    "purpose": purpose_obj.purpose_name,
+                    "features": features or purpose_obj.features
+                })
+        user.card_purposes = final_purpose_list
+        user.save()
+
+        # ✅ Create Job Profile
+        JobProfile.objects.create(
+            MbrCardNo=user,
+            BasicInformation={
+                "full_name": user.full_name,
+                "mobile_number": user.mobile_number,
+                "email": user.email or ""
+            },
+        )
+
+        # ✅ Map Card
+        models.CardMapper.objects.create(
+            business_id=business.business_id,
+            primary_card=user,
+            secondary_card=user.mbrcardno,
+            secondary_card_type="digital"
+        )
+
+        # ✅ Call Event Server API for auto-registration
+        try:
+            EVENT_SERVER_URL = os.getenv("EVENT_SERVER_URL", "http://127.0.0.1:8002")
+            registration_payload = {
+                "EventMbrCard": user.mbrcardno,
+                "BasicInformation": {
+                    "full_name": user.full_name,
+                    "mobile_number": user.mobile_number,
+                    "email": user.email
+                },
+                "CareerObjectivesPreferences": {},
+                "EducationDetails": {},
+                "WorkExperience": {},
+                "SkillsCompetencies": {},
+                "AchievementsExtracurricular": {},
+                "OtherDetails": {},
+                "EventRegistrationData": {},
+                "EventRegistered": True
+            }
+
+            event_response = requests.post(
+                f"{EVENT_SERVER_URL}/member/event/event/entry/{event_id}/",
+                json=registration_payload,
+                timeout=5
+            )
+
+            if event_response.status_code != 201:
+                return Response({
+                    "success": True,
+                    "message": "Member added, but event registration failed.",
+                    "event_error": event_response.text
+                }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({
+                "success": True,
+                "message": "Member added, but could not connect to event server.",
+                "event_error": str(e)
+            }, status=status.HTTP_201_CREATED)
+
+        # ✅ Send welcome email
+        send_template_email(
+            subject="Welcome to JSJCard!",
+            template_name="email_template/member_welcome.html",
+            context={
+                'full_name': user.full_name,
+                'mbrcardno': user.mbrcardno,
+                'email': user.email,
+                'mobile_number': user.mobile_number,
+                'card_purposes': final_purpose_list,
+                'created_at': user.MbrCreatedAt.strftime('%Y-%m-%d %H:%M:%S'),
+            },
+            recipient_list=[user.email]
+        )
+
+        return Response({
+            "success": True,
+            "message": "Member and event registration completed successfully.",
+            "member": {
+                "mbrcardno": user.mbrcardno,
+                "full_name": user.full_name,
+                "email": user.email,
+                "mobile_number": user.mobile_number,
+                "address": user.address
+            }
+        }, status=status.HTTP_201_CREATED)
+        
+        
+        
+        
+# class JobProfileOfMemberAPI(APIView):
+#     authentication_classes = [BusinessTokenAuthentication]
+#     permission_classes = [IsAuthenticated]
+
+#     @swagger_auto_schema(
+#         responses={200: JobProfileSerializer()},
+#         tags=["Job Profile Management"]
+#     )
+#     def get(self, request , card_number):
+#         """Retrieve the logged-in user's job profile"""
+#         try:
+           
+#             member = models.Member.objects.get(mbrcardno=card_number)
+#             job_profile = JobProfile.objects.get(MbrCardNo=member)
+           
+#             serializer = JobProfileSerializer(job_profile)
+#             response_data = serializer.data
+#             response_data["full_name"] = request.user.full_name
+#             response_data["MbrCardNo"] = request.user.mbrcardno
+#             response_data["mobile_no"] = request.user.mobile_number
+#             response_data["email"] = request.user.email
+
+#             return Response(response_data, status=status.HTTP_200_OK)
+
+#         except models.Member.DoesNotExist:
+#             return Response({"error": "Member not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+#         except JobProfile.DoesNotExist:
+#             return Response({"error": "Job Profile Not Found"}, status=status.HTTP_404_NOT_FOUND)
+
+  
