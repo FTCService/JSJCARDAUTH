@@ -105,7 +105,7 @@ class Member(AbstractBaseUser, PermissionsMixin):
         ],
         default="+91"
     )
-    MbrStatus = models.BooleanField(null=True, blank=True)  
+    MbrStatus = models.BooleanField(default=True)  
     otp = models.CharField(max_length=6, null=True, blank=True)  
 
     card_purposes = models.JSONField(default=list)
