@@ -631,8 +631,8 @@ class BusinessRegistrationSerializer(serializers.ModelSerializer):
 class BusinessKycSerializer(serializers.ModelSerializer):
     businessName = serializers.CharField(source="business.business_name", read_only=True)
 
-    kycAdharCard = serializers.CharField(required=False)  # ✅ Accepts String (URL)
-    kycPanCard = serializers.CharField(required=False)  # ✅ Accepts String (URL)
+    kycAdharCard = serializers.CharField(required=False, allow_null=True, allow_blank=True)  # ✅ Accepts String (URL)
+    kycPanCard = serializers.CharField(required=False, allow_null=True, allow_blank=True)  # ✅ Accepts String (URL)
     kycOthers = serializers.CharField(required=False, allow_null=True, allow_blank=True)   # ✅ Optional
 
     class Meta:
